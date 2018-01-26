@@ -1,0 +1,67 @@
+{
+  "_from": "derivejs@^0.5.5",
+  "_id": "derivejs@0.5.5",
+  "_inBundle": false,
+  "_integrity": "sha512-HdqiSMgVZbjC0G3fKls1+cPqDFoO+15IeZDTchUldYBGTn9uC9QoTMY+Gi26wmbqcLClQu8ZO6a3UkveFqczCg==",
+  "_location": "/derivejs",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "range",
+    "registry": true,
+    "raw": "derivejs@^0.5.5",
+    "name": "derivejs",
+    "escapedName": "derivejs",
+    "rawSpec": "^0.5.5",
+    "saveSpec": null,
+    "fetchSpec": "^0.5.5"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/derivejs/-/derivejs-0.5.5.tgz",
+  "_shasum": "fea381f9d3370e413f248c7ac941b3349132e8a1",
+  "_spec": "derivejs@^0.5.5",
+  "_where": "C:\\dev\\botverse",
+  "author": {
+    "name": "Yuval Aloni"
+  },
+  "bugs": {
+    "url": "https://github.com/yuval-a/derivejs/issues"
+  },
+  "bundleDependencies": false,
+  "dependencies": {
+    "clone": "^2.1.1",
+    "mongodb": "^2.2.33"
+  },
+  "deprecated": false,
+  "description": "A DRY Object Data Mapper framework, that handles database persistence transparently in the background.",
+  "homepage": "https://github.com/yuval-a/derivejs#readme",
+  "keywords": [
+    "odm",
+    "mongo",
+    "mongodb",
+    "database",
+    "data",
+    "data structure",
+    "data model",
+    "model",
+    "framework",
+    "dry",
+    "derive",
+    "persistent",
+    "persistence",
+    "object data mapper"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "name": "derivejs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yuval-a/derivejs.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "version": "0.5.5"
+}
