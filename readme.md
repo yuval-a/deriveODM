@@ -229,6 +229,25 @@ To register a property for the listener, put its name (as a string) inside an ar
 The `changed` method contains this code by default:
 `console.log (this[MainIndex]+":",property,"changed from",oldValue,"to",newValue);`
 
+##### Listening for updates on the database
+If you need to make some actions only *after* certain properties are updated on documents in the database, you can use
+the `$UpdateListen` meta object that all derivejs objects will have by default. 
+The properties on this object can be strings specifying a certain property to "listen" for updates to,
+and the value is a callback function, with two arguments: `newValue` - the new updated value, and `oldValue` - the old value
+of the property before the update.
+Example, adding a listener on `obj.prop`:
+```javascript
+this.$UpdateListen["obj.prop"] = function(newValue,oldValue) {
+    console.log (oldValue + " changed to " + newValue);
+};
+```
+Then, if later you run:
+```javascript
+yourobj.obj.prop = "newvalue";
+```
+then once `"newvalue"` will actually be set on the database - then the callback will be called.
+You can also set an update listener directly on `$UpdateListen` when defining the Model.
+
 ### Unique indexes
 Now, we decide that we want the `_name` property index to be unique:
 
