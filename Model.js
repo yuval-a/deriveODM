@@ -27,31 +27,28 @@ module.exports = function(options) {
                             var propDescrp = Reflect.getOwnPropertyDescriptor(target, property);
                             // If property not defined in model
                             if (!propDescrp) {
-                                //throw new Error("Trying to set unknown property: "+property);
                                 // Invoke the _error method on the object instance
                                 target._error ("Trying to set unknown property: "+property+" (property value is left unchanged).");
                                 return true;
                             }
                             else {
-                                // Meta property
-                                if (property.indexOf('$')===0) return Reflect.set(target,property,value,receiver);
                                 // Readonly
                                 if (propDescrp.writable === false) {
-                                    //console.warn("WARNING: Tried to set read-only property: "+property+" (the property is left unchanged).");
                                     target._error ("Tried to set read-only property: "+property+" (property is left unchanged).");
                                 }
-                                else {
+                                // If not meta property
+                                else if (! (property.indexOf('$')===0)) {
                                     // If the property is set to a DeriveJS object - save a DBRef instead
                                     if (value && value.hasOwnProperty('$_ModelInstance')) {
                                         value = new DBRef(value.$_ModelInstance,value._id);
                                     }
                                     // Add an Mongo Update call to the bulk operations
-                                    syncManager.update (target, target._id, property, value);
-
-                                    if (target.$Listen && target.$Listen.indexOf(property) > -1) {
-                                        target.changed (property, value, target[property]);
-                                    }
+                                    syncManager.update (target, target._id, property, value, target[property]);
                                 }
+                                if (target.$Listen && target.$Listen.indexOf(property) > -1) {
+                                    target.changed (property, value, target[property]);
+                                }
+
                                 return Reflect.set(target,property,value,receiver);
                             }
                         },
@@ -79,21 +76,21 @@ module.exports = function(options) {
                                 return true;
                             }
                             else {
+                                // If not meta property
+                                if (! (prop.indexOf('$')===0)) {
+                                    if (! (Array.isArray(target) && prop === "length" ) ) {
+                                        var setPath = path+'.'+prop;
+    
+                                        if (value && value.hasOwnProperty('$_ModelInstance')) {
+                                            value = new DBRef(value.$_ModelInstance,value._id);
+                                        }
 
-                                if (prop.indexOf('$')===0) return Reflect.set(target,prop,value,receiver);
-
-                                var setPath = path+'.'+prop;
-                                if (! (Array.isArray(target) && prop === "length" ) ) {
-                                    if (value && value.hasOwnProperty('$_ModelInstance')) {
-                                        value = new DBRef(value.$_ModelInstance,value._id);
+                                        
+                                        syncManager.update (originalTarget, originalTarget._id, setPath, value, target[prop]);
                                     }
-
-                                    syncManager.update (originalTarget, originalTarget._id, setPath, value);
-
-                                    if (originalTarget.$Listen && originalTarget.$Listen.indexOf(setPath) > -1) {
-                                        originalTarget.changed (setPath, value, target[prop]);
-                                    }
-                                    
+                                }
+                                if (originalTarget.$Listen && originalTarget.$Listen.indexOf(setPath) > -1) {
+                                    originalTarget.changed (setPath, value, target[prop]);
                                 }
                                 return Reflect.set(target,prop,value,receiver);
                             }
@@ -102,13 +99,12 @@ module.exports = function(options) {
                 }
 
                 proxify(obj,path,originalTarget) {
-                        for (var p in obj) {
-                            if (obj.constructor.name === "ObjectID") continue;
-                            if (typeof obj[p] === "object" && obj[p] !== null) {
-                                obj[p] = this.proxify (obj[p],path+'.'+p, originalTarget);
-                            }
+                    for (var p in obj) {
+                        if (obj.constructor.name === "ObjectID") continue;
+                        if (typeof obj[p] === "object" && obj[p] !== null) {
+                            obj[p] = this.proxify (obj[p],path+'.'+p, originalTarget);
                         }
-                    //}
+                    }
                     return new Proxy(obj,this.PathHandler(path, originalTarget));
                 }
             }
@@ -130,7 +126,7 @@ module.exports = function(options) {
                 
                 // Add secret boolean to know it's a model instance
                 model.$_ModelInstance = name+"s";
-
+                if (!model.hasOwnProperty('$UpdateListen')) model.$UpdateListen = {};
                 
                 for (var prop in model) {
 
@@ -202,7 +198,7 @@ module.exports = function(options) {
                         for (var i=0,len=overridden.length;i<len;i++) {
                             delete m[overridden[i]];
                         }
-                        var indexes = Object.keys(deriveModel).filter(k=>(k.indexOf('_')===0));
+                        var indexes = Object.keys(deriveModel).filter(k=>(k.indexOf('_')===0 && typeof deriveModel[k] !== 'function'));
                         var newIndexes = {}, newUniqueIndexes = {};
 
                         var k, hasNew = false;
@@ -242,7 +238,7 @@ module.exports = function(options) {
                             if (typeof value !== "function") continue;
                             descrp = {
                                 enumerable: false,
-                                writeable: false,
+                                writable: false,
                                 value: value
                             };
                             PropDescrp[prop] = descrp;
@@ -268,44 +264,6 @@ module.exports = function(options) {
                         });
                     }
 
-                    /*
-                    static reindex() {
-                        return new Promise( (resolve,reject)=> {
-                            var col = syncManager.collection;
-                            col.dropIndexes()
-                            .then(
-                                ()=> {
-                                    indexProps = Object.keys(model).filter(m=>m.indexOf('_')===0);
-                                    uniqueIndex = null, index = null, mainIndex = null;
-                                    indexes = {}, uniqueIndexes = {};
-                                    if (indexProps.length) {
-                                        for (var i=0,len=indexProps.length;i<len;i++ ) {
-                                            p = indexProps[i];
-                                            if (p.lastIndexOf('$') === p.length-1) {
-                                                v = model[p];
-                                                delete model[p];
-                                                p = p.slice(0,-1);
-                                                indexProps[i] = p;
-                                                model[p] = v;
-                                                uniqueIndexes[p] = 1;
-                                                if (!uniqueIndex) uniqueIndex = p;
-                                            }
-                                            else {
-                                                indexes[p] = 1;
-                                                if (!index) index = p;
-                                            }
-                                        }
-                                    }
-                                    mainIndex = uniqueIndex? uniqueIndex : (index?index:"_id");
-                                    if (Object.keys(indexes).length) col.createIndex ( indexes, {background:true} );
-                                    if (Object.keys(uniqueIndexes).length) col.createIndex ( uniqueIndexes, {unique:true, background:true} );
-                                    resolve();
-                                }
-                            );
-                        });
-                    }
-                    */
-                    
                     constructor() {
                         Object.defineProperties (this,clone(PropDescrp));
                         
@@ -409,6 +367,7 @@ module.exports = function(options) {
                             )
                             .catch(err=> {
                                 console.log ("model get error catch:",err);
+                                reject (err);
                             });
                         });
                     }
@@ -426,7 +385,7 @@ module.exports = function(options) {
                             .then(alldocs=> {
                                 alldocs.forEach(doc=> {
                                     modelGet = doc;
-                                    all.push(new ModelClass());
+                                    all.push(new this());
                                 });
                                 resolve (all);
 
@@ -452,7 +411,7 @@ module.exports = function(options) {
                             .then(alldocs=> {
                                 alldocs.forEach(doc=> {
                                     modelGet = doc;
-                                    allmap[doc[index]] = new ModelClass();
+                                    allmap[doc[index]] = new this();
                                 });
                                 resolve (allmap);
                             });
@@ -477,7 +436,7 @@ module.exports = function(options) {
                                     if (has && returnDocument) {
                                         cur.next().then(doc=> {
                                             modelGet = doc;
-                                            resolve (new ModelClass());
+                                            resolve (new this());
                                         })
                                     }
                                     else

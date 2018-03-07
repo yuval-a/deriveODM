@@ -2,6 +2,13 @@ const MongoClient = require('mongodb').MongoClient,
       ModelMapper = require('./MongoModelMapper'),
       EventEmitter = require('events');
 
+
+class Update {
+    constructor(operation, callback) {
+        this.operation = operation;
+        this.callback = callback;
+    }
+}
 var SyncManager = {
 
     dbUrl: "mongodb://localhost:27017/", //deriveDB",
@@ -158,7 +165,9 @@ var SyncManager = {
                             super();
                             this.setMaxListeners(1000000); // Allow many listeners to the "unlock" event
                             if (DebugMode) console.log ("Sync manager created");
-                            this.locked = false;
+                            //this.locked = false;
+                            this.insertLocked = false;
+                            this.updateLocked = false;
                             this.running = false;
                             this.db = db;
                             this.Mapper = SyncManager.Mapper;
@@ -167,17 +176,18 @@ var SyncManager = {
                             this.PENDING = false;
 
                             this.BULK = {
-                                operations: [],
-                                inserts: {}, // documents by _id
-                                updates: {} // documents by _id
+                                inserts: {},
+                                updates: [],
                             }
 
                             // Make sure the collection exist - create it if it doesn't. This is new in version 0.1.1
                             if (COLLECTIONS.indexOf(collection)===-1) {
+                                this.lock();
                                 this.db.createCollection(collection)
                                 .then(()=> {
                                     this.collection = this.db.collection(collection);
                                     this.ensureIndexes(indexes, uniqueIndexes, false);
+                                    this.unlock();
                                 });
                                 
                             }
@@ -188,17 +198,46 @@ var SyncManager = {
                         }
 
                         lock() {
-                            this.locked = true;
-                            if (DebugMode) console.log ("Sync manager locked");
+                            this.lockInsert();
+                            this.lockUpdate();
                         }
                         unlock() {
-                            this.locked = false;
-                            this.emit("unlocked");
-                            if (DebugMode) console.log ("Sync manager unlocked");
+                            this.unlockInsert();
+                            this.unlockUpdate();
+                        }
+                        lockInsert() {
+                            this.insertLocked = true;
+                            if (DebugMode) console.log ("Sync manager insert locked");
+
+                        }
+                        unlockInsert() {
+                            this.insertLocked = false;
+                            this.emit("insertUnlocked");
+                            if (DebugMode) console.log ("Sync manager insert unlocked");
+
+
+                        }
+                        lockUpdate() {
+                            this.updateLocked = true;
+                            if (DebugMode) console.log ("Sync manager update locked");
+
+                        }
+                        unlockUpdate() {
+                            this.updateLocked = false;
+                            this.emit("updateUnlocked");
+                            if (DebugMode) console.log ("Sync manager update unlocked");
                         }
 
+                        clearInserts() {
+                            this.BULK.inserts = {};
+                        }
+                        clearUpdates() {
+                            this.BULK.updates = [];
+                        }
                         clear() {
-                            this.BULK.operations = [];
+                            this.BULK.inserts = {};
+                            this.BULK.updates = [];
+                            
                         }
 
                         run() {
@@ -221,106 +260,182 @@ var SyncManager = {
 
                         create(obj) {
                             let insert = this.Mapper.Create(obj);
-                            if (!this.locked) {
-                                this.BULK.operations.push ( insert );
-                                if ( !(obj._id in this.BULK.inserts) )
-                                    this.BULK.inserts[obj._id] = obj;
+                            if (!this.insertLocked) {
+                                this.BULK.inserts[obj._id] = insert;
+                                //if (Object.keys(this.BULK.inserts).length > 100) this.sync.call(this);
                             }
                             else {
-                                this.once("unlocked",function() {
-                                    this.BULK.operations.push ( insert );
-                                    if ( !(obj._id in this.BULK.inserts) )
-                                        this.BULK.inserts[obj._id] = obj;
-                                    });
+                                this.once("insertUnlocked",function() {
+                                    this.BULK.inserts[obj._id] = insert;
+                                    //if (Object.keys(this.BULK.inserts).length > 100) this.sync.call(this);
+                                });
                             }
-                            
                         }
 
-                        update(obj,index,property,value) {
-                            var update = this.Mapper.Update(index,property,value);
-                            
-                            if (!this.locked) {
-                                this.BULK.operations.push ( update );
-                                if ( !(obj._id in this.BULK.updates) )
-                                    this.BULK.updates[obj._id] = obj;
+                        update(obj,index,property,value,oldValue) {
+                            var update = this.Mapper.Update(index,property,value),
+                                updateCallback = false;
+
+                            if (obj.$UpdateListen[property]) {
+                                updateCallback = {
+                                    obj: obj,
+                                    callback: obj.$UpdateListen[property],
+                                    newValue: value,
+                                    oldValue: oldValue
+                                }
+                            }
+                            if (!this.updateLocked) {
+                                this.BULK.updates.push ( new Update(update, updateCallback) );
+                                //if (this.BULK.updates.operations.length > 100) this.sync.call(this);
                             }
                             else {
-                                this.once("unlocked",function() {
-                                    this.BULK.operations.push ( update );
-                                    if ( !(obj._id in this.BULK.updates) )
-                                        this.BULK.updates[obj._id] = obj;
-                                    });
+                                this.once("updateUnlocked",function() {
+                                    this.BULK.updates.push ( new Update(update, updateCallback) );
+                                    //if (this.BULK.updates.operations.length > 100) this.sync.call(this);
+                                });
                             }
+
+
                         }
 
-                        handleBulkResult(res) {
-                            // Result of the bulk operations
-                            var result = res.getRawResponse(), i, len;
-                            var inserted = result.insertedIds;
+                        handleInserts() {
+                            var inserts = this.BULK.inserts,
+                                insertDocs = Object.values(inserts);
+                            if (!insertDocs.length) return Promise.resolve();
 
-                            // Handle errors
-                            if (res.hasWriteErrors()) {
-                                var errors = result.writeErrors, err;
-                                for (i=0,len=errors.length;i<len;i++) {
-                                    err = errors[i];
-                                    var errObjId = findByIndexInArray(inserted,err.index)._id;
-                                    if (err.code === this.Mapper.Error.DUPLICATE) {
-                                        this.BULK.inserts[errObjId]._duplicate();
+                            return new Promise ( (resolve, reject)=> {
+                                console.time("inserts");
+                                this.lockInsert();
+                                console.log ("Running "+insertDocs.length+" inserts...");
+                                this.collection.insertMany(insertDocs, {ordered:false}).then(
+                                    res=> {
+                                        console.timeEnd("inserts"); 
+                                        resolve();
+                                        var inserted = Object.values(res.insertedIds);
+                                        if (inserted.length !== insertDocs.length) {
+                                            console.log ("insertedIds length different than insertDocs length!");
+                                            process.exit();
+                                        }
+                                        // Handle inserts
+                                        if (inserted.length) {
+                                            var _id;
+                                            for (let i=0,len=inserted.length;i<len;i++) {
+                                                _id = inserted[i];
+                                                if (inserts[_id])
+                                                    inserts[_id]._created();
+                                            }
+                                        }
                                     }
-                                    else {
-                                        console.log ("Error in bulk operation: ",err.op);
-                                        //console.log ("error op: ",err.op);
-                                        //if (errObjId in this.BULK.updates) this.BULK.updates[errObjId]._error(err.mess)
+                                )
+                                .catch (err=> {
+                                    console.log ("HAS INSERT ERRORS!");
+                                    if (err.writeErrors && err.writeErrors.length) {
+                                        var we = err.writeErrors, ins;
+                                        for (let e of we) {
+                                            ins = inserts[e.getOperation()._id];
+                                            if (e.code == this.Mapper.Error.DUPLICATE)
+                                                ins._duplicate();
+                                            else
+                                                ins._error(e.errmsg);
+
+                                        }
                                     }
-                                }
-                            }
-
-                            // Handle inserts
-                            if (result.nInserted) {
-                                var _id;
-                                for (i=0,len=inserted.length;i<len;i++) {
-                                    _id = inserted[i]._id;
-                                    if (this.BULK.inserts[_id])
-                                        this.BULK.inserts[_id]._created();
-                                }
-                            }
-
-                            //https://docs.mongodb.com/manual/reference/method/BulkWriteResult/#BulkWriteResult
-
-                            this.clear();
-                            this.PENDING = false;
-                            this.unlock();
-
+                                })
+                                .then (function() {
+                                    this.clearInserts();
+                                    this.unlockInsert();
+                                }.bind(this));
+                            });
                         }
+                        
+                        handleUpdates(updates) {
+                            if (!updates.operations.length) return Promise.resolve();
+                            return new Promise ( (resolve,reject)=> {
+                                console.time("updates");
+                                this.lockUpdate();
+                                this.collection.bulkWrite(updates.operations).then(
+                                    res=> {
+                                        console.timeEnd("updates");
+                                        resolve();
+                                        // Result of the bulk operations
+                                        var result = res.getRawResponse(), i, len;
+                                        /*
+                                        if (res.hasWriteErrors()) {
+                                            console.log ("UPDATE HAS WRITE ERRORS!");
+                                            console.log ("operations:", updates.operations.length,"modified:",result.nModified);
+                                            console.dir (updates.operations, {depth:null});
+                                            console.log ("Errors:",);
+                                            console.log (res.getWriteErrors());
+                                            process.exit();
+                                        }
+                                        */
+                                        if (result.nModified) {
+                                            var ucb = updates.callbacks, cbo, len = ucb.length;
+                                            if (len) {
+                                                for (let i=0;i<len;i++) {
+                                                    cbo = ucb[i];
+                                                    cbo.callback.call(cbo.obj,cbo.newValue,cbo.oldValue);
+                                                }
+                                            }
+                                        }
+                                    },
+                                    err=> {
+                                        console.log ("Sync Manager bulk write error: ",err);
+                                        resolve();
+                                    }
+
+                                )
+                                .catch(err=> {
+                                        console.log ("Sync Manager bulk write error: ",err);
+                                        resolve();
+                                })
+                                .then(function() {
+                                    this.clearUpdates();
+                                    this.unlockUpdate();
+                                }.bind(this));
+                            });
+                        }
+
 
                         sync() {
                             if (this.PENDING) {
                                 console.log ("Sync for "+this.collection+" canceled. Previous sync already pending");
+                                console.log (Object.keys(this.BULK.inserts).length+" inserts pending. "+this.BULK.updates.length+" updates pending.");
                                 return;
                             }
 
-                            if (this.BULK.operations.length===0) return;
-
-                            //console.log ("bulk:");
-                            //console.dir (this.BULK.operations,{depth:null});
-                            this.lock();
-                            this.collection.bulkWrite(this.BULK.operations).then(
-
-                                res=> { this.handleBulkResult(res); },
-                                err=> {
-                                    console.log ("Sync Manager bulk write error: ",err);
-                                    this.unlock();
-                                }
-
-                            )
-                            .catch(err=> {
-                                    console.log ("Sync Manager bulk write error: ",err);
-                                    this.unlock();
-                            });
                             this.PENDING = true;
-                        }
 
+                            var updates  = { operations: [], callbacks: [] },
+                                // eXclusive updates - updates dependant on inserts (should only run after insterts are done)
+                                xupdates = { operations: [], callbacks: [] }
+
+                            var u, id;
+                            for (var i=0,len=this.BULK.updates.length;i<len;i++) {
+                                u = this.BULK.updates[i];
+                                id = u.operation.updateOne.filter._id;
+                                if (id in this.BULK.inserts) {
+                                    xupdates.operations.push (u.operation);
+                                    if (u.callback) xupdates.callbacks.push (u.callback);
+                                }
+                                else {
+                                    updates.operations.push (u.operation);
+                                    if (u.callback) updates.callbacks.push (u.callback);
+                                }
+                            }
+
+                            var syncer = this;
+                            syncer.handleUpdates (updates);
+                            syncer.handleInserts()
+                            .then(function() { 
+                                syncer.handleUpdates(xupdates); 
+                            })
+                            .then(function() {
+                                syncer.PENDING = false; 
+                            });
+                        }
                     }
+
                     resolve(SyncerClass);
                 },
                 err=> {

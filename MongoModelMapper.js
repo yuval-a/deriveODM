@@ -4,7 +4,7 @@ module.exports = {
     indexName: "_id",
     Create: function(document) {
         document._id = new ObjectID();
-        return { insertOne : { "document" : document } }
+        return document;
     },
     Update: 
         function (index,prop,value) {
