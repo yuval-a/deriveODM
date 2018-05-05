@@ -1,28 +1,28 @@
 {
-  "_from": "derivejs@^0.5.5",
-  "_id": "derivejs@0.5.5",
+  "_from": "derivejs",
+  "_id": "derivejs@0.6.0",
   "_inBundle": false,
-  "_integrity": "sha512-HdqiSMgVZbjC0G3fKls1+cPqDFoO+15IeZDTchUldYBGTn9uC9QoTMY+Gi26wmbqcLClQu8ZO6a3UkveFqczCg==",
+  "_integrity": "sha512-f4rzN8PGzYOONDWWcG0BHWxcca7ODdF+dSBn/KYuW0lrK14yHy9IcBixKePgANeo8/ytKbbNVNMDi+6f2HrBkw==",
   "_location": "/derivejs",
   "_phantomChildren": {},
   "_requested": {
-    "type": "range",
+    "type": "tag",
     "registry": true,
-    "raw": "derivejs@^0.5.5",
+    "raw": "derivejs",
     "name": "derivejs",
     "escapedName": "derivejs",
-    "rawSpec": "^0.5.5",
+    "rawSpec": "",
     "saveSpec": null,
-    "fetchSpec": "^0.5.5"
+    "fetchSpec": "latest"
   },
   "_requiredBy": [
     "#USER",
     "/"
   ],
-  "_resolved": "https://registry.npmjs.org/derivejs/-/derivejs-0.5.5.tgz",
-  "_shasum": "fea381f9d3370e413f248c7ac941b3349132e8a1",
-  "_spec": "derivejs@^0.5.5",
-  "_where": "C:\\dev\\botverse",
+  "_resolved": "https://registry.npmjs.org/derivejs/-/derivejs-0.6.0.tgz",
+  "_shasum": "53755b2677452eff810627e9fd90df9def481507",
+  "_spec": "derivejs",
+  "_where": "C:\\dev\\botverse-dual",
   "author": {
     "name": "Yuval Aloni"
   },

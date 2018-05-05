@@ -10,6 +10,7 @@ module.exports = {
         function (index,prop,value) {
         return {
             updateOne : {
+                [this.indexName]: index.toString(),
                 filter: { [this.indexName]: index },
                 update: { $set: { [prop]: value } }
             }

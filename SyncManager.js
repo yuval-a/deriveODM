@@ -164,8 +164,8 @@ var SyncManager = {
                         constructor(collection,indexes,uniqueIndexes,syncInterval) {
                             super();
                             this.setMaxListeners(1000000); // Allow many listeners to the "unlock" event
-                            if (DebugMode) console.log ("Sync manager created");
                             //this.locked = false;
+                            this.collectionName = collection;
                             this.insertLocked = false;
                             this.updateLocked = false;
                             this.running = false;
@@ -178,6 +178,8 @@ var SyncManager = {
                             this.BULK = {
                                 inserts: {},
                                 updates: [],
+                                // keys are ids, in each id kes are property names, then value is an array of callback functions
+                                updateCallbacks: {}
                             }
 
                             // Make sure the collection exist - create it if it doesn't. This is new in version 0.1.1
@@ -195,6 +197,9 @@ var SyncManager = {
                                 this.collection = this.db.collection(collection);
                                 this.ensureIndexes(indexes, uniqueIndexes, false);
                             }
+
+                            if (DebugMode) console.log (this.collectionName+": Sync manager created");
+
                         }
 
                         lock() {
@@ -207,25 +212,25 @@ var SyncManager = {
                         }
                         lockInsert() {
                             this.insertLocked = true;
-                            if (DebugMode) console.log ("Sync manager insert locked");
+                            if (DebugMode) console.log (this.collectionName+": Sync manager insert locked");
 
                         }
                         unlockInsert() {
                             this.insertLocked = false;
                             this.emit("insertUnlocked");
-                            if (DebugMode) console.log ("Sync manager insert unlocked");
+                            if (DebugMode) console.log (this.collectionName+": Sync manager insert unlocked");
 
 
                         }
                         lockUpdate() {
                             this.updateLocked = true;
-                            if (DebugMode) console.log ("Sync manager update locked");
+                            if (DebugMode) console.log (this.collectionName+": Sync manager update locked");
 
                         }
                         unlockUpdate() {
                             this.updateLocked = false;
                             this.emit("updateUnlocked");
-                            if (DebugMode) console.log ("Sync manager update unlocked");
+                            if (DebugMode) console.log (this.collectionName+": Sync manager update unlocked");
                         }
 
                         clearInserts() {
@@ -242,7 +247,7 @@ var SyncManager = {
 
                         run() {
                             if (this.running) {
-                                console.log (this.collection+" SyncManager already running");
+                                console.log (this.collectionName+": SyncManager already running");
                                 return;
                             }
                             this.clear();
@@ -276,27 +281,36 @@ var SyncManager = {
                             var update = this.Mapper.Update(index,property,value),
                                 updateCallback = false;
 
-                            if (obj.$UpdateListen[property]) {
-                                updateCallback = {
-                                    obj: obj,
-                                    callback: obj.$UpdateListen[property],
-                                    newValue: value,
-                                    oldValue: oldValue
-                                }
-                            }
                             if (!this.updateLocked) {
-                                this.BULK.updates.push ( new Update(update, updateCallback) );
+                                this.BULK.updates.push ( update );
                                 //if (this.BULK.updates.operations.length > 100) this.sync.call(this);
                             }
                             else {
                                 this.once("updateUnlocked",function() {
-                                    this.BULK.updates.push ( new Update(update, updateCallback) );
+                                    this.BULK.updates.push ( update );
                                     //if (this.BULK.updates.operations.length > 100) this.sync.call(this);
                                 });
                             }
-
-
                         }
+
+                        addUpdateCallback (id, property, value, callback) {
+                            if ( !(id in this.BULK.updateCallbacks) )
+                                this.BULK.updateCallbacks[id] = {};
+                            if ( !(property in this.BULK.updateCallbacks[id]) )
+                                this.BULK.updateCallbacks[id][property] = [];
+                            if ( !(value in this.BULK.updateCallbacks[id][property]) )
+                                this.BULK.updateCallbacks[id][property][value] = [];
+
+                            if (!this.updateLocked) {                                
+                                this.BULK.updateCallbacks[id][property][value].push (callback);
+                            }
+                            else {
+                                this.once("updateUnlocked",function() {
+                                    this.BULK.updateCallbacks[id][property][value].push (callback);
+                                });
+                            }
+                        }
+                        //syncManager.addUpdateCallback(this._id,property,value,callback);
 
                         handleInserts() {
                             var inserts = this.BULK.inserts,
@@ -329,6 +343,7 @@ var SyncManager = {
                                 )
                                 .catch (err=> {
                                     console.log ("HAS INSERT ERRORS!");
+                                    console.dir (err,{depth:null});
                                     if (err.writeErrors && err.writeErrors.length) {
                                         var we = err.writeErrors, ins;
                                         for (let e of we) {
@@ -349,16 +364,54 @@ var SyncManager = {
                         }
                         
                         handleUpdates(updates) {
-                            if (!updates.operations.length) return Promise.resolve();
+                            if (!updates.length) return Promise.resolve();
                             return new Promise ( (resolve,reject)=> {
-                                console.time("updates");
+                                //console.time("updates");
                                 this.lockUpdate();
-                                this.collection.bulkWrite(updates.operations).then(
+                                console.log ("Handling "+updates.length+" updates...");
+                                this.collection.bulkWrite(updates).then(
                                     res=> {
-                                        console.timeEnd("updates");
+                                        //console.timeEnd("updates");
                                         resolve();
+
+                                        // update operation example:
+                                        /*
+                                        updateOne: {
+                                            _id: id 
+                                            filter: { 
+                                                _id: ObjectID {  _bsontype: 'ObjectID', id: Buffer [ 90, 222, 107, 69, 61, 137, 249, 85, 200, 4, 22, 17 ] }
+                                            },
+                                            update: { 
+                                                '$set': { '_currentLocation.location': 10 } 
+                                            }
+                                        }
+                                        */ 
+
+                                        //var result = res.getRawResponse(), i, len;
+
+                                        //if (result.nModified) {
+                                            var id,prop,val,cbs,cb;
+                                            for (var op of updates) {
+                                                id = op.updateOne._id;
+                                                prop = Object.keys(op.updateOne.update.$set)[0],
+                                                val = op.updateOne.update.$set[prop];
+                                                if (id in this.BULK.updateCallbacks && prop in this.BULK.updateCallbacks[id] && val in this.BULK.updateCallbacks[id][prop]) {
+                                                    cbs = this.BULK.updateCallbacks[id][prop][val];
+                                                    while (cbs.length) {
+                                                        cb = cbs.shift();
+                                                        cb();
+                                                    }
+                                                }
+                                                /*
+                                                if (op.updateOne.update.$set.hasOwnProperty('_currentLocation.location')) {
+                                                    console.log ("set current location:");
+                                                    console.dir (op,{depth:null});
+                                                }
+                                                */
+                                            }
+                                        //}
+
                                         // Result of the bulk operations
-                                        var result = res.getRawResponse(), i, len;
                                         /*
                                         if (res.hasWriteErrors()) {
                                             console.log ("UPDATE HAS WRITE ERRORS!");
@@ -369,15 +422,6 @@ var SyncManager = {
                                             process.exit();
                                         }
                                         */
-                                        if (result.nModified) {
-                                            var ucb = updates.callbacks, cbo, len = ucb.length;
-                                            if (len) {
-                                                for (let i=0;i<len;i++) {
-                                                    cbo = ucb[i];
-                                                    cbo.callback.call(cbo.obj,cbo.newValue,cbo.oldValue);
-                                                }
-                                            }
-                                        }
                                     },
                                     err=> {
                                         console.log ("Sync Manager bulk write error: ",err);
@@ -406,29 +450,37 @@ var SyncManager = {
 
                             this.PENDING = true;
 
-                            var updates  = { operations: [], callbacks: [] },
+                            var updates  = [],
                                 // eXclusive updates - updates dependant on inserts (should only run after insterts are done)
-                                xupdates = { operations: [], callbacks: [] }
+                                xupdates = [];
 
                             var u, id;
                             for (var i=0,len=this.BULK.updates.length;i<len;i++) {
                                 u = this.BULK.updates[i];
-                                id = u.operation.updateOne.filter._id;
+                                id = u.updateOne._id;
                                 if (id in this.BULK.inserts) {
-                                    xupdates.operations.push (u.operation);
-                                    if (u.callback) xupdates.callbacks.push (u.callback);
+                                    xupdates.push (u);
                                 }
                                 else {
-                                    updates.operations.push (u.operation);
-                                    if (u.callback) updates.callbacks.push (u.callback);
+                                    updates.push (u);
                                 }
                             }
 
                             var syncer = this;
+                            if (updates.length) {
+                                console.log (syncer.collectionName+": running "+updates.length+" updates...");
+                            }
+
                             syncer.handleUpdates (updates);
+                            if (Object.keys(this.BULK.inserts).length) {
+                                console.log (syncer.collectionName+": running "+Object.keys(this.BULK.inserts).length+" inserts...");
+                            }
                             syncer.handleInserts()
                             .then(function() { 
-                                syncer.handleUpdates(xupdates); 
+                                if (xupdates.length) {
+                                    console.log (syncer.collectionName+": running "+xupdates.length+" xupdates...");
+                                }
+                                return syncer.handleUpdates(xupdates);
                             })
                             .then(function() {
                                 syncer.PENDING = false; 

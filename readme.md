@@ -230,23 +230,27 @@ The `changed` method contains this code by default:
 `console.log (this[MainIndex]+":",property,"changed from",oldValue,"to",newValue);`
 
 ##### Listening for updates on the database
-If you need to make some actions only *after* certain properties are updated on documents in the database, you can use
-the `$UpdateListen` meta object that all derivejs objects will have by default. 
-The properties on this object can be strings specifying a certain property to "listen" for updates to,
-and the value is a callback function, with two arguments: `newValue` - the new updated value, and `oldValue` - the old value
-of the property before the update.
-Example, adding a listener on `obj.prop`:
-```javascript
-this.$UpdateListen["obj.prop"] = function(newValue,oldValue) {
-    console.log (oldValue + " changed to " + newValue);
-};
+**Note**: `$UpdateListen` from previous versions is currently *deprecated*.
+
+Each Model class also has an `$update` method, that you can use if you need to know exactly when
+a certain property has been **updated and saved on the database**. The `$update` method is used as the following:
+```javascript 
+$update (property, value, callback)
 ```
-Then, if later you run:
+`callback` is a function that will be executed the next time that `property` is set to `value`.
+Note that `property` is a **string**. If the property is nested, simply use its nested notation as a string, e.g.
+`someprop.anotherprop.prop`.
+Note also that the callback will be called only **once**, as soon as the property is set to `value` after `$update` was called.
+Also note, that `$update` **doesn't** actually set the value on `property` - you have to do it yourself explicitly; so, if you have some instance `dataobj`, and you want to run some code as soon as the property `prop` on it is updated on the db to, let's say `25`:
+
 ```javascript
-yourobj.obj.prop = "newvalue";
+   dataobj.$update ("prop",25, function() {
+        // some code here...
+   });
+   // Actually update the value. This will set it on the local object, and soon after - it will also be updated on the db,
+   // and then the callback in $update above will be called
+   dataobj.prop = 25;
 ```
-then once `"newvalue"` will actually be set on the database - then the callback will be called.
-You can also set an update listener directly on `$UpdateListen` when defining the Model.
 
 ### Unique indexes
 Now, we decide that we want the `_name` property index to be unique:

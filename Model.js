@@ -2,6 +2,24 @@ const SyncManager = require('./SyncManager');
 const clone = require('clone');
 const DBRef = require('mongodb').DBRef;
 
+
+// When calling it, make sure "this" is the object
+function setPropByPath(prop, value) {
+    if (typeof prop === "string")
+        prop = prop.split(".");
+
+    if (prop.length > 1) {
+        var e = prop.shift();
+        setPropByPath(this[e] =
+                 Object.prototype.toString.call(this[e]) === "[object Object]"
+                 ? this[e]
+                 : {},
+               prop,
+               value);
+    } else
+        this[prop[0]] = value;
+}
+
 module.exports = function(options) {
 
   return new Promise( (resolve,reject)=> {
@@ -126,7 +144,7 @@ module.exports = function(options) {
                 
                 // Add secret boolean to know it's a model instance
                 model.$_ModelInstance = name+"s";
-                if (!model.hasOwnProperty('$UpdateListen')) model.$UpdateListen = {};
+                //if (!model.hasOwnProperty('$UpdateListen')) model.$UpdateListen = {};
                 
                 for (var prop in model) {
 
@@ -321,6 +339,12 @@ module.exports = function(options) {
                     changed(property, newValue, oldValue) {
                         console.log (this[MainIndex]+":",property,"changed from",oldValue,"to",newValue);
                     }
+
+                    $update (property, value, callback) {
+                        //console.log ("ADDING UPDATE CALLBACK");
+                        syncManager.addUpdateCallback(this._id, property, value, callback);
+                        //setPropByPath.call(this, property, value);
+                    }
                     static collection() {
                         return syncManager.collection;
                     }
@@ -358,7 +382,7 @@ module.exports = function(options) {
                                         modelGet = doc;
                                         resolve (new this());
                                     }
-                                    else reject("get: Document not found");
+                                    else reject("get: Document "+(which._id?which._id:"")+" not found!");
                                 },
                                 err=>{
                                     console.log ("model get error:",err);
@@ -389,6 +413,26 @@ module.exports = function(options) {
                                 });
                                 resolve (all);
 
+                            });
+                        });
+                    }
+
+                    static setAll(which, property, value) {
+                        return new Promise( (resolve,reject)=> {
+                            var criteria = Object.assign({},ModelClass.$DefaultCriteria);
+                            if (which) {
+                                if (typeof which === "object")
+                                    Object.assign (criteria, which);
+                                else 
+                                    criteria[MainIndex] = which;
+                            }
+
+                            syncManager.collection.updateMany (
+                                criteria,
+                                { $set: { [property]: value } },
+                                { upsert: false }
+                            ).then(res=> {
+                                resolve();
                             });
                         });
                     }
