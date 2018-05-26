@@ -395,6 +395,55 @@ module.exports = function(options) {
                             });
                         });
                     }
+
+                    static join(which,joinWith,localField,foreignField,joinAs,returnAsModel=false) {
+                        var thisclass = this;
+                        return new Promise( (resolve,reject)=> {
+                            var criteria = Object.assign({},ModelClass.$DefaultCriteria);
+                            if (typeof which === "object" && which.constructor.name === "DBRef") {
+                                criteria['_id'] = which.oid;
+                            }
+                            else {
+                                if (typeof which === "object")
+                                    Object.assign (criteria, which);
+                                else 
+                                    criteria[MainIndex] = which;
+                            }
+                            syncManager.collection.aggregate([
+                                {
+                                    $lookup:
+                                    {
+                                        from: joinWith,
+                                        localField: localField,
+                                        foreignField: foreignField,
+                                        as: joinAs
+                                    }
+
+                                },
+                                { $unwind : "$"+foreignField },
+                                {
+                                    $match: criteria
+                                },
+                            ], function (err,doc) {
+                                if (err) {
+                                    console.log ("join error:",err);
+                                    reject (err);
+                                    return;
+                                }
+                                if (doc) {
+                                    if (returnAsModel) {
+                                        modelGet = doc[0];
+                                        resolve (new thisclass());
+                                    }
+                                    else {
+                                        resolve(doc[0]);
+                                    }
+                                }
+                                else reject("join: Document "+(which._id?which._id:"")+" not found!");
+                            });
+                        });
+                    }
+
                     static getAll(which,limit=0) {
                         return new Promise( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);

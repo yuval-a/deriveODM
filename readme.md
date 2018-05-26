@@ -855,3 +855,32 @@ The last one is from the `change` method.
 After we restore our ships data from the database - 
 then The Boldly Go lowers its shields, and attacked by Feisty again - 
 with the shields down - The Boldly Go "integrity hull" suffers a damage of 20 percent.
+
+## Advanced subjects
+### Join
+You can perform a "join" query with the `join` static method all model classes have:
+`join(which,joinWith,localField,foreignField,joinAs,returnAsModel=false)`
+
+`which` is the criteria for the document to retrieve from the "primary" ("local" collection),
+`joinWith` is the name of the "secondary" ("foreign") collection (as a string).
+`localField` is the name of the field that is equivalent to the `foreignField` on the secondary collection.
+`joinAs` is the name of a property where the "joined" document will be included into.
+`returnAsModel` - if set to true, then the function will return an instance of the model (as in when using the `get` function) - you will most likely **not** want to set it to `true`, as the model will have "foreign" fields - and once you try setting or changing them - it will try to persist it to the db. 
+This function is usually used only for getting "readonly" data, and not data you want to modify or change.
+
+#### An example use case:
+Let's say you have a `Posts` collection and a `User` collection, and you want to get the data for a certain post, and join it with the user data of the user who posted it. With the following assumptions:
+* You have a `Post` model defined, with `_email` as its primary key, and `_authorId` with a string id containing the id of the user who posted it.
+* Your `Users` collection documents have a `_userId` field with string ids
+
+```javascript
+Post.join("user@email.com","Users","_authorId","_userId","author").then(
+    post=> {
+        // Now the post object here, will also have an "author" field containing all the data for the user with _authorId/_userId
+    }
+);
+```
+Note: Use join to join with a single document from another collection.
+
+### joinAll (coming soon)
+
