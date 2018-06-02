@@ -420,10 +420,10 @@ module.exports = function(options) {
                                     }
 
                                 },
-                                { $unwind : "$"+foreignField },
+                                { $unwind : "$"+joinAs },
                                 {
                                     $match: criteria
-                                },
+                                }
                             ], function (err,doc) {
                                 if (err) {
                                     console.log ("join error:",err);
