@@ -359,6 +359,7 @@ var SyncManager = {
                                 .then (function() {
                                     this.clearInserts();
                                     this.unlockInsert();
+                                    resolve(); // <- otherwise syncer will be stuck in PENDING forever. Fixed in 20/11/18
                                 }.bind(this));
                             });
                         }
