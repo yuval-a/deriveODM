@@ -267,8 +267,11 @@ module.exports = function(options) {
                     static clear(which) {
                         if (!syncManager.collection) return Promise.resolve();
                         return new Promise ( (resolve,reject)=> {
-                            var criteria = ModelClass.$DefaultCriteria;
-                            if (which) {
+                            var criteria = Object.assign({},ModelClass.$DefaultCriteria);
+                            if (typeof which === "object" && which.constructor.name === "DBRef") {
+                                criteria['_id'] = which.oid;
+                            }
+                            else {
                                 if (typeof which === "object")
                                     Object.assign (criteria, which);
                                 else 
@@ -276,7 +279,7 @@ module.exports = function(options) {
                             }
                             syncManager.collection.remove(criteria)
                             .then(res=> {
-                                if (res.result.ok==1) resolve()
+                                if (res.result.ok==1) resolve();
                                 else reject();
                             });
                         });
