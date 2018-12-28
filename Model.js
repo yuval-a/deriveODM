@@ -433,7 +433,7 @@ module.exports = function(options) {
                                     reject (err);
                                     return;
                                 }
-                                if (doc) {
+                                if (doc && doc.length) {
                                     if (returnAsModel) {
                                         modelGet = doc[0];
                                         resolve (new thisclass());
