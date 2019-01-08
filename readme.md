@@ -924,3 +924,10 @@ Note: Use join to join with a single document from another collection.
 
 ### joinAll (coming soon)
 
+### Access the "raw" mongoDB collection object
+Although DeriveJS is designed, written, and intended to be in charge of all data persistence operations transparently in the background without direct interference,
+there might come a rare occasion where you will need access to the collection object, to perform native MongoDB operations "yourself" 
+(something that should generally be avoided, and should rarely happen - if you encounder a native MongoDB operation that DeriveJS doesn't enable - I would appreciate if you contact me via Github and tell me about it).
+To get access to the MongoDB collection associated with a data model class, you can call the static method `collection()` of the class, which will return the assosicated [NodeJS MongoDB driver collection object](https://mongodb.github.io/node-mongodb-native/api-generated/collection.html).
+
+
