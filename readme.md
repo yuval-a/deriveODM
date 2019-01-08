@@ -52,7 +52,7 @@ are actually saved on the database, or exactly when specific properties have bee
 
 ## Getting Started
 
-Install via [npm](https://www.npmjs.com/):
+Install via [npm](https://www.npmjs.com/):<br>
 `npm install derivejs` <br>
 or clone the [git repository](https://github.com/yuval-a/derivejs).
 
