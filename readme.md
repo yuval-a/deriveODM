@@ -3,8 +3,8 @@
 
 **DeriveJS** lets you manipulate and create Javascript data objects, while **automatically** and **transparently** persisting and updating them on a database (such as MongoDB), in the background, without any additional hassle or code.
 
-It wraps your data classes and objects with [Javascript Proxies](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy), "tapping-in" to native operations such as creating instances (using the normal `new` operator), and updating property values (using the normal assignment operator `=`), and then handling passing database calls to the database in the background, while levearging MongoDB's bulk operations capabailities in a smart way, to save unnecesasry calls to the db engine,
-and running bulk operations in fixed (settable) intervals. The background engine is mostly handled transparently by a moudle called `SyncManager`.
+It wraps your data classes and objects with [Javascript Proxies](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy), "tapping-in" to native operations such as creating instances (using the normal `new` operator), and updating property values (using the normal assignment operator `=`), and then handling passing database calls to the database in the background, while leveraging MongoDB's bulk operations capabilities in a smart way, to save unnecessary calls to the db engine,
+and running bulk operations in fixed (settable) intervals. The background engine is mostly handled transparently by a module called `SyncManager`.
 
 It only takes a few easy steps:
 
@@ -44,7 +44,7 @@ The document will now have the value `30` set to its `age` property.
 
 And so on...
 
-With `DeriveJS` you can create and manipulate a large amount of data objects, and know that they will be persisted in the database, efficently and in a short time.
+With `DeriveJS` you can create and manipulate a large amount of data objects, and know that they will be persisted in the database, efficiently and in a short time.
 
 Although the methodology behind the framework is mostly that of "send and forget" regarding data persistence - DeriveJS also exposes [callback functions](#Built-in-methods:-callbacks-and-hooks) that allows getting notified exactly when specific objects
 are actually saved on the database, or exactly when specific properties have been actually updated, for the occasions when you need to know it for certain operations.
@@ -112,7 +112,7 @@ Example: `_name`;
 * `$` (last) When used as the **last** character of an **index** property, that index will be set as a *unique* index (using the same value for unique indexes will yield an error).
 Example: `_name$`, will define a *unique index* called `_name` (notice - the `$` char at the end of the property name will be removed, and will **not** be defined as part of the name).
 
-* `ALL_UPPERCASE`, when a property name is defined with all capital letters, it will be marked as **readonly**. If you try to set the value of a readonly property (using the `=` operator) - you will get an error message. Note, that if you also define a readonly property as an *index*, like in the above example - that property will **still** be settable via the constructor arguments (but **not** from anywhere else).
+* `ALL_UPPERCASE`, when a property name is defined with all capital letters, it will be marked as **read-only**. If you try to set the value of a read-only property (using the `=` operator) - you will get an error message. Note, that if you also define a read-only property as an *index*, like in the above example - that property will **still** be settable via the constructor arguments (but **not** from anywhere else).
 
 * `$` (start) - Putting the Dollar sign as the **first** character of a property name - will define it as a "**meta**" property (aka a "secret" property). A meta property will **not** be considered as part of the data structure of the model - it and its value will **not** be persisted on the database. If you iterate over the values of the data instance - it will **not** appear (it won't be enumerable). But you may **still** get and set its value locally. This is useful for saving some additional information that you only need locally, and does not require persistence on the database server. These can also be used to reference callback functions, as demonstrated later-on.<br>
 There are also, in-fact, three "built-in" meta properties,  two are automatically created for each object:
@@ -354,8 +354,7 @@ deep: true,
 renameIndexes: true
 ```
 
-With `renameIndexes:true` - the method will rename properties in documents in the collection that starts with a `_` and are defined in the model without it. Similarily
-it will rename properties **without** a leading `_` that appear in the model definition with it (for situations where you decide to define an index for a non-index property).
+With `renameIndexes:true` - the method will rename properties in documents in the collection that starts with a `_` and are defined in the model without it. Similarly it will rename properties **without** a leading `_` that appear in the model definition with it (for situations where you decide to define an index for a non-index property).
 So, to rename all `_TYPE` properties to `TYPE` in our collection, we could have used:
 `Spaceship.remodel( { renameIndexes: true } );`
 
@@ -377,7 +376,7 @@ if (process.argv[2] == "--remodel") {
 
 ## Going further - extending and deriving models
 
-Let's define a "subtype" of `Spaceship`, we'll call it a `Battleship`, and we'll also add a property to hold its weapons.
+Let's define a "sub-type" of `Spaceship`, we'll call it a `Battleship`, and we'll also add a property to hold its weapons.
 If we do it like this (note, this is the WRONG way):
 
 
@@ -929,5 +928,4 @@ Although DeriveJS is designed, written, and intended to be in charge of all data
 there might come a rare occasion where you will need access to the collection object, to perform native MongoDB operations "yourself" 
 (something that should generally be avoided, and should rarely happen - if you encounder a native MongoDB operation that DeriveJS doesn't enable - I would appreciate if you contact me via Github and tell me about it).
 To get access to the MongoDB collection associated with a data model class, you can call the static method `collection()` of the class, which will return the assosicated [NodeJS MongoDB driver collection object](https://mongodb.github.io/node-mongodb-native/api-generated/collection.html).
-
 
