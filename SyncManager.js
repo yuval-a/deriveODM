@@ -336,7 +336,7 @@ var SyncManager = {
                                             for (let i=0,len=inserted.length;i<len;i++) {
                                                 _id = inserted[i];
                                                 if (inserts[_id])
-                                                    inserts[_id]._created();
+                                                    inserts[_id]._inserted();
                                             }
                                         }
                                     }
@@ -349,7 +349,7 @@ var SyncManager = {
                                         for (let e of we) {
                                             ins = inserts[e.getOperation()._id];
                                             if (e.code == this.Mapper.Error.DUPLICATE)
-                                                ins._duplicate();
+                                                ins._isDuplicate();
                                             else
                                                 ins._error(e.errmsg);
 

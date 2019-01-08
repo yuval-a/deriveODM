@@ -1,49 +1,65 @@
 
-*Note*: this is still an early development version and should probably not be used in production (yet).
-
 ## Introduction
-DeriveJS is an ODM - Object Data Mapper framework, a "wrapper" around a database (specifially [MongoDB](https://www.mongodb.com/), but can be extended to be wrapped around other DBs as well) - 
-that handles all the data-persisting aspects **transparently** in the background, with very little hassle. You define some data objects as "needs to be persisted on the DB", and then you can freely set and manipulate their properties and values, knowing that they **will** be persisted on the DB, without any additional explicit code.
 
-So for, example you can write:
+**DeriveJS** lets you manipulate and create Javascript data objects, while **automatically** and **transparently** persisting and updating them on a database (such as MongoDB), in the background, without any additional hassle or code.
 
+It wraps your data classes and objects with [Javascript Proxies](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy), "tapping-in" to native operations such as creating instances (using the normal `new` operator), and updating property values (using the normal assignment operator `=`), and then handling passing database calls to the database in the background, while levearging MongoDB's bulk operations capabailities in a smart way, to save unnecesasry calls to the db engine,
+and running bulk operations in fixed (settable) intervals. The background engine is mostly handled transparently by a moudle called `SyncManager`.
+
+It only takes a few easy steps:
+
+##### Define a data model:
 ```javascript
-var user = new User();
-user.email = "email@mail.com";
-user.password = "password";
+    var User = Model({
+        _email$: "",
+        _name: "",
+        age: null,
+        password: null,
+        setPassword(pass) {
+            // hash the plain-text password ("hashit" is just an example function for your preffered hashing function)
+            var passwordHash = hashit(pass);
+            this.password = passwordHash;
+        }
+    },"User");
+```
+The first time you define it, a `Users` collection is defined on the database, with an `_email` unique index and a `_name` index (you can also alter the properties, change indexes later).
+
+##### Create an instance
+```javascript
+    var user = new User ("someemail@mail.com","Someone Somebody");
+```
+There will now be a new document in the `Users` collection, having "`someemail@mail.com`" as the `_email` and "`Someone Somebody`" as the `_name`.
+
+##### Manipulate properties 
+```javascript
+    user.age = 30;
 ```
 
-And, there **will** be a new `User` record persisted on the Database under a "Users" collection, updated with the properties you set,
-without the need of calling a `.save()` method.
+The document will now have the value `30` set to its `age` property.
 
-
-I wrote DeriveJS, when I was dealing with a project involving many different data types, with hundreds and thousands of instances, with their properties being manipulated.
-I wanted a way to make them persist, so if the program is stopped, I could "restore" the state and continue (and I also wanted a way to get all sorts of statistics about the data, midrunning) - naturally I looked into MongoDB, and different ODMs, the most known being Mongoose, but it bothered me, that after any change you do - 
-you have to explicitely call a .save() method:
-
-```javascript 
-var user = new User(username);
-user.email = "email@mail.com";
-user.save();
+##### Call instance functions:
+```javascript
+    user.setPassword("plaintextpassword");
 ```
 
-It didn't look very [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself) to me.
+And so on...
+
+With `DeriveJS` you can create and manipulate a large amount of data objects, and know that they will be persisted in the database, efficently and in a short time.
+
+Although the methodology behind the framework is mostly that of "send and forget" regarding data persistence - DeriveJS also exposes [callback functions](#Built-in-methods:-callbacks-and-hooks) that allows getting notified exactly when specific objects
+are actually saved on the database, or exactly when specific properties have been actually updated, for the occasions when you need to know it for certain operations.
 
 
-DeriveJS works by wrapping objects with Javascript "[Proxies](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy)" to override some native operations such as creating a new instance (via `new`), or setting an instance property (via an assignment operator). Every "data class" is associated with a "`SyncManager`" class instance that is connected to an equivalent MongoDB collection, and is in charge of running MongoDB operations for that collection in the background. The native data operations are "mapped" to appropriate MongoDB operations (via a customizable singleton "`Mapper`" class called `MongoModelMapper`). The SyncManager also leverages Mongo's bulk operations ability, stacking-up all the operations, and then bulk-running them on timed intervals, taking advantage of the better performance that bulk operations allow. The default sync interval is 1 second. Every SyncManager runs **per collection**, and you can change the interval per each SyncManager.
+## Getting Started
 
-## Installation
-Install via [npm](https://www.npmjs.com/): <br>
-`npm install derivejs` <br>
-
+Install via [npm](https://www.npmjs.com/):
+`npm install derivejs`
 or clone the [git repository](https://github.com/yuval-a/derivejs).
 
-You should also setup or have access to a [MongoDB](https://www.mongodb.com/) server.
+You should also setup or have access to a [MongoDB](https://www.mongodb.com/) server, and have it running.
 
-## Getting started
-*Note*, to use DeriveJS, you need to setup and have a MongoDB server running.
-
-To get started, require DeriveJS, and then call the `Model` module. The module is a function that returns a `Promise` that resolves with a `Model` function, by the time the Promise is resolved, the module has finished its initializations, and is connected to the MongoDB server. When you call the module, you should pass an `options` argument to it. The `options` can contain 3 key:value arguments:
+To get started, require DeriveJS, and then call the `Model` module. The module is a `Promise` that resolves with a `Model` function. By the time the Promise is resolved, the module has finished its initializations, and is connected to the MongoDB server. When you call the module, you should pass an `options` argument to it.
+The `options` can contain 3 key:value arguments:
 
 * `dbUrl`: the MongoDB server connection url, as a string. Default: "`mongodb://localhost:27017/`".
 * `dbName`: the name of the database, as a string. Default: "`deriveDB`".
@@ -65,7 +81,9 @@ derive.Model
 );
 ```
 ### Defining a Data Model
-Once inside the resolved promise, you can use the `Model` function to define a "Data Model", by passing an object literal as an argument, describing the data properties and their default values. The `Model` function returns a **`class`** "representing" that data model, and its functionality.
+Once inside the resolved promise, you can use the `Model` function to define a "Data Model", by passing an object literal as an argument, describing the data properties and their default values (as well as some instance methods, when needed). The `Model` function returns a **`class`** "representing" that data model, and its functionality. (as mentioned, that class is a special "proxied" class that comes with some
+built-in stuff in it, to handle database persistence, and offer some static and default instance methods which will be described below).
+
 Let's create a data model to represent a "spaceship":
 
 ```javascript        
@@ -77,21 +95,24 @@ Let's create a data model to represent a "spaceship":
 ```
 
 Now `Spaceship` is a `class` you can create new object instances of.
-The second argument for the `Model` function is a name, that will be used for both the class name, and the collection name (where an `s` will be added to, to signify "plural" form. So the collection name will be `Spaceships` in this case). There is an additional optional argument, that can set the "sync interval" duration, the amount of time between each interval where the SyncManager class instance runs the bulk operations stacked since the last sync. The default is 1000ms.
+The second argument for the `Model` function is a name, that will be used for both the class name, and the collection name (where an `s` will be added to, to signify "plural" form; So the collection name will be `Spaceships` in this case). There is an additional optional argument, that can set the "sync interval" duration, the amount of time between each interval where the SyncManager class instance runs the database bulk operations stacked since the last sync. The default is 1000ms (1 second).
 (The Model function also have two additional arguments `_syncer`, and `_proxy`, used internally and that shouldn't be used).
 
-### Modifiers
-Notice that some properties were defined with an underscore, and some are uppercase. This is **intentional**, and meaningful --
-you can use some special characters in the property names (called "*modifiers*"), that will define certain characteristics of those properties:
+Notice that some properties were defined with an underscore, and some are uppercase. This is **intentional**, and meaningful. These are called "*Modifiers*" and are explained in the next section.
 
-* `_` (start) when used as the **first** character of a property, will mark it as an **`index`**. Other than being defined as an index inside MongoDB, an index is also always setabble from the model class constructor. 
-*Notes*: The order of the indexes defined, matters - as this will also be the order of the arguments in the constructor. Furthermore - the order affects which index is considered as the "main index". Also note, that the property name **does** include the underscore character. 
+## Going deeper
+
+### Modifiers
+You can use some special characters in the property names (called "*Modifiers*"), that will define certain characteristics of those properties:
+
+* `_` (start) when used as the **first** character of a property, will mark it as an **`index`**. Other than being defined as an index inside MongoDB, an index is also always setabble from the model class **constructor**. 
+*Notes*: The order of the indexes defined, matters - as this will also be the order of the arguments in the constructor. Furthermore - the order affects which index is considered as the ["Main Index"](#main-index). Also note, that the property name **does** include the underscore character. 
 Example: `_name`;
 
 * `$` (last) When used as the **last** character of an **index** property, that index will be set as a *unique* index (using the same value for unique indexes will yield an error).
 Example: `_name$`, will define a *unique index* called `_name` (notice - the `$` char at the end of the property name will be removed, and will **not** be defined as part of the name).
 
-* `ALL_UPPERCASE`, when a property name is defined with all capital letters, it will be marked as **readonly**. If you try to set the value of a readonly property (using the = operator) - you will get an error message. Note, that if you also define a readonly property as an *index*, like in the above example - that property will **still** be settable via the constructor arguments (but not from anywhere else).
+* `ALL_UPPERCASE`, when a property name is defined with all capital letters, it will be marked as **readonly**. If you try to set the value of a readonly property (using the `=` operator) - you will get an error message. Note, that if you also define a readonly property as an *index*, like in the above example - that property will **still** be settable via the constructor arguments (but **not** from anywhere else).
 
 * `$` (start) - Putting the Dollar sign as the **first** character of a property name - will define it as a "**meta**" property (aka a "secret" property). A meta property will **not** be considered as part of the data structure of the model - it and its value will **not** be persisted on the database. If you iterate over the values of the data instance - it will **not** appear (it won't be enumerable). But you may **still** get and set its value locally. This is useful for saving some additional information that you only need locally, and does not require persistence on the database server. These can also be used to reference callback functions, as demonstrated later-on.<br>
 There are also, in-fact, three "built-in" meta properties,  two are automatically created for each object:
@@ -100,17 +121,17 @@ one is`$_ModelInstance` which always equal to `true`, and is used internally whe
 * `_` (end) - Using a `_` character as the **last** character in the end of a property name, will add the property **and** its value to the [`$DefaultCriteria`](#defaultcriteria) object, (note, the last `_` will be omitted from the property name). 
 If using both last `_` and last `$` (i.e. setting both a unique index and a default-criteria value, make sure the `_` is the **last** character, and the `$` is one before it).
 
-Having obtained our data class, we can create object instances of:
+Having obtained our data class, we can create object instances of it:
 
 ```javascript 
 var ship = new Spaceship('The Beyond'); 
 ```
-Each new instance - will have an identical data record in MongoDB database, in a `Spaceships` collection,  which will always be synced with the changes you make to the "local" object. Once you create a new instance, that instance will also have an auto-generated `_id` value (of type [ObjectID](https://docs.mongodb.com/manual/reference/method/ObjectId/)) associated with it.
-After a while you should see a message on the console: `The Beyond created`, that message comes from an instance method that all model instances has by default,
+Each new instance - will have an identical data record (a "document") in a MongoDB database, in a `Spaceships` collection,  which will always be synced with the changes you make to the "local" object. Once you create a new instance, that instance will also have an auto-generated `_id` value (of type [ObjectID](https://docs.mongodb.com/manual/reference/method/ObjectId/)) associated with it.
+After a while you should see a message on the console: `The Beyond inserted`, that message comes from an instance method that all model instances has by default,
 and can be overridden by subclasses:
 ```javascript
-_created() {
-    console.log (this[MainIndex]+" created");
+_inserted() {
+    console.log (this[MainIndex]+" inserted");
 }
 ```
 ([`MainIndex`](#mainindex) is an internal variable that holds the "primary" index of the collection, in this case `_name`).
@@ -132,13 +153,24 @@ If we now run the Mongo console, and run a "find all" query on the `Spaceships` 
 Your `_id` values will vary, of-course.
 
 ### Built-in methods: callbacks and hooks
-If you need to know exactly when the objects are actually persisted in the database - as mentioned before -
-every instance has a built-in instance method: `_created()` which is called as soon as they does.
-You can override that method -- either by extending class - or defining the method directly inside the model definition -- and put some "post-persistence" code there, if you need.
+
+**NEW VERSION UPDATE:**  some of these method names have been **changed** from previous versions:
+* `_created()` was changed to `_inserted()`
+* `_duplicate()` was changed to `_isDuplicate()`
+* `$update()` was changed to `$onUpdate()`
+
+Every instance of an object has some built-in "callback" functions that are called when certain database-persistence related events occur in regards to that object, and each data class also have some "static" callback methods, so you can use them in situations when you need to follow certain events, like having an object inserted to the database collection, having a certain property updated, and more.
+
+#### Database persistence callbacks
+
+* `_inserted()`
+
+If you need to know exactly when an object is actually persisted in the database every instance has a built-in instance method: `_inserted()` which is called as soon as it's inserted in the DB.
+You can override that method -- either by extending a class - or defining the method directly inside the model definition -- and put some "post-persistence" code there, if you need.
 
 ```javascript
 class Ship extends Spaceship {
-    _created() {
+    _inserted() {
         console.log (this._name+" created, with id: "+this._id); 
     }
 }
@@ -147,22 +179,22 @@ var ship = new Ship("The Created");
 will yield:
 `The Created created, with id: 5a063f842ef67924f4e0f9bb` (with a different id of-course).
 
-If you want to implement specific callbacks for specific instances, you have several ways to achieve this:
+If you want to implement specific callbacks for **specific instances**, you have several ways to achieve this:
 
 You can define a meta property on the model, to hold a callback function.
 
 ```javascript
-var Spaceship = {
+var Spaceship = Model({
     _name: "",
     _TYPE: "",
     crew: [],
 
     $createdCallback: undefined
 
-}.model("Spaceship");
+}, "Spaceship");
 ```
 
-Then extend the class, and allow passing a callback function via the constructor. Call the callback from the overridden `_created` function:
+Then extend the class, and allow passing a callback function via the constructor. Call the callback from the overridden `_inserted` function:
 
 ```javascript
 class Ship extends Spaceship {
@@ -170,7 +202,7 @@ class Ship extends Spaceship {
         super(_name, _TYPE);
         this.$createdCallback = callback;
     }
-    _created() {
+    _inserted() {
         this.$createdCallback.call(this);
     }
 }
@@ -187,21 +219,21 @@ Another option is to use an [`EventEmitter`](https://nodejs.org/api/events.html)
 ```javascript
 
 const EventEmitter = require("events");
-var Spaceship = {
+var Spaceship = Model({
     _name: "",
     _TYPE: "",
     crew: [],
 
     $events:EventEmitter
 
-}.model("Spaceship");
+},"Spaceship");
 
 class EventfulShip extends Spaceship {
     constructor(_name,_TYPE) {
         super(_name,_TYPE);
         this.$events = new EventEmitter();
     }
-    _created() {
+    _inserted() {
         this.$events.emit("created");
     }
 }
@@ -212,43 +244,44 @@ ship.$events.on("created",function() {
 });
 ```
 
-There are a total of 4 built-in methods to all data objects:
-
-These 3 are database-related, and their names start with an underscore:
-* `_created()` : Called when the object is persisted on the database server, and contains by default:
-`console.log (this[MainIndex]+" created");`
-* `_duplicate()` : Called when the MongoDB server yields a "duplicate key value" error, and contains by default:
+* `_isDuplicate()`:  Called when the MongoDB server yields a "duplicate key value" error, and contains by default:
 `console.log (this[MainIndex]+" has a duplicate key value!");`
-* `_error(msg)` : Called whenever there is a data-related error for this object, and contains by default:                        `console.log ("Error in "+this[MainIndex]+": "+msg);`
 
-#### Listening for changes
-The fourth built-in method can be used when you want to listen for value-changes on certain properties of your object: 
+* `_error(msg)` : Called whenever there is a data-related error for this object, and contains by default:
+`console.log ("Error in "+this[MainIndex]+": "+msg);`
+
+
+#### Listening for local changes
+The fourth built-in method can be used when you want to listen for value-changes on certain properties of your object,
+(**Note**: this will trigger on *local* changes to the properties, regardless to their state in the equavilent documents in the database collection)
+
 * `changed(property, newValue, oldValue)`
 
 To register a property for the listener, put its name (as a string) inside an array defined as the `$Listen` meta-property (e.g. `$Listen: [ "property" ,"otherproperty", "objectprop.prop"]`.
 The `changed` method contains this code by default:
 `console.log (this[MainIndex]+":",property,"changed from",oldValue,"to",newValue);`
 
-##### Listening for updates on the database
+#### Listening for updates on the database
 **Note**: `$UpdateListen` from previous versions is currently *deprecated*.
 
-Each Model class also has an `$update` method, that you can use if you need to know exactly when
-a certain property has been **updated and saved on the database**. The `$update` method is used as the following:
+Each Model class also has an `$onUpdate()` method, that you can use if you need to know exactly when
+a certain property has been **updated and saved on the database**. The `$onUpdate()` method is used as follows:
+
 ```javascript 
-$update (property, value, callback)
+$onUdate (property, value, callback)
 ```
 `callback` is a function that will be executed the next time that `property` is set to `value`.
 Note that `property` is a **string**. If the property is nested, simply use its nested notation as a string, e.g.
 `someprop.anotherprop.prop`.
-Note also that the callback will be called only **once**, as soon as the property is set to `value` after `$update` was called.
-Also note, that `$update` **doesn't** actually set the value on `property` - you have to do it yourself explicitly; so, if you have some instance `dataobj`, and you want to run some code as soon as the property `prop` on it is updated on the db to, let's say `25`:
+Note also that the callback will be called only **once**, as soon as the property is set to `value` after `$onUpdate()` was called.
+Also note, that `$onUpdate` **doesn't** actually set the value on `property` - you have to do it yourself explicitly; so, if you have some instance `dataobj`, and you want to run some code as soon as the property `prop` on it is updated on the db to, let's say `25`:
 
 ```javascript
-   dataobj.$update ("prop",25, function() {
+   dataobj.$onUpdate ("prop",25, function() {
         // some code here...
    });
    // Actually update the value. This will set it on the local object, and soon after - it will also be updated on the db,
-   // and then the callback in $update above will be called
+   // and then the callback in $onUpdate above will be called
    dataobj.prop = 25;
 ```
 
@@ -256,27 +289,26 @@ Also note, that `$update` **doesn't** actually set the value on `property` - you
 Now, we decide that we want the `_name` property index to be unique:
 
 ```javascript
-var Spaceship = {
+var Spaceship = Model({
     _name$: "",
     _TYPE: "",
     crew: [],
-}.model("Spaceship",true);
+},"Spaceship");
 ```
 
 Once the engine modifies the `_name` index to make it unique, if there are records with duplicate `_name` values - Mongo will throw an **error**, and the unique index will **not** be defined. You will need to take care of the duplicates yourself for it to successfully be defined. You can either issue a relevant `.remove` command from the mongo console, or you can also use the static `clear()` method on the `Spaceship` class. The `clear` method can accept a "find query" filter as an argument (e.g. `{_name:"The Beyond"}`). So, for example if you have several ships named "`The Beyond`" and you want to define a unique constraint on `_name` and create a new, single `"The Beyond"` ship, then you can use:
 
 ```javascript
     await Model({},"Spaceship").clear({_name:"The Beyond"});
-    var Spaceship = {
+    var Spaceship = Model({
         _name$: "",
         _TYPE: "",
         crew: [],
-    }.model("Spaceship");
+    }, "Spaceship");
         
     var ship = new Spaceship ("The Beyond");
 ```
-The first line is just for getting a reference to the `Spaceships` collection, to call `clear` to remove all "`The Beyond`" ships, then we can define the model with the new constraint, and create are new unique ship.
-
+The first line is just for getting a reference to the `Spaceships` collection, to call `clear` to remove all "`The Beyond`" ships, then we can define the model with the new constraint, and create a new unique ship.
 
 At this point we have the `_name` index defined as a unique index -- there can't be more than one object with the same `_name` value. Let's see what happens when we
 try to create two Spaceships with the same name:
@@ -289,10 +321,10 @@ We will get a message on the console:
 `The Boldly Go has a duplicate key value!`
 
 One of the records was successfully inserted to the database, the other was detected as having a duplicate `_name` and was rejected. The message is coming
-from the `_duplicate()` instance method, that all Model instances have. Its body is defined with:
+from the `_isDuplicate()` instance method, that all Model instances have. Its body is defined with:
 
 ```javascript
-_duplicate() {
+_isDuplicate() {
     console.log (this[mainIndex]+" has a duplicate key value!");
 }
 ```
@@ -304,17 +336,17 @@ You may also "disable" an index - redefine it as a "normal" property - to do so,
 Suppose we want to unindex the `_TYPE` property, we can define our model as:
 
 ```javascript
-    var Spaceship = {
+    var Spaceship = Model({
         _name$: "",
         TYPE: "",
         crew: [],
-    }.model("Spaceship");
+    }, "Spaceship" );
 ```
 
 **However** - any past documents in our database collection, will *still* have the old `_TYPE` property in them. 
 
 ### The `remodel` method
-If you'd like to retroactively rename all the old `_TYPE` properties in existing documents to `TYPE`, you can use the static `remodel` method. That function gets an object of options, as an argument - 
+If you'd like to retroactively rename all the old `_TYPE` properties in existing documents to `TYPE`, you can use the static `remodel()` method. That function gets an object of options, as an argument - 
 which you can use to switch on certain types of the method's operations. Currently there are two:
 
 ```javascript
@@ -331,6 +363,16 @@ The `deep` operation allows you to retroactively define new properties on existi
 using `deep:true` will add the new property with its default value to **all** existing documents in the collection.
 
 To read more about indexes and how they are managed in DeriveJS -- see "[Indexes and how they are handled in the Mongo server](#indexes-and-how-they-are-handled-in-the-Mongo-server)".
+
+You will probably want to have `remodel` called only once after you make changes to your models, therefore it might be a good idea to call it in response to a certain command-line argument when running your Node app.
+For example:
+
+```javascript
+// process.argv is an array, where the first item contains 'node', the second item contains the script file name, and the rest of the items are command-line arguments
+if (process.argv[2] == "--remodel") {
+    Spaceship.remodel({ deep:true, renameIndexes: true});
+}
+```
 
 
 ## Going further - extending and deriving models
@@ -497,10 +539,8 @@ The method also have a second argument - `returnDocument`, a boolean that if set
 (or `false` if it doesn't).
 
 #### A word of caution for when using the `get` functions: ####
-Upon retrieving the objects from the database - their `constructor` functions **will** be called for each object. <br>
-Therefore - if you override the constructor and have any code that affects or changes the data there - it **will** run - that is usually *not* desired when retrieving 
-data object, so you should make sure you call the `get` functions from a (usually "higher") class that runs a constructor that does not change the data
-(like the default constructor).
+Upon retrieving the objects from the database - their `constructor` functions **will** be called for each object.
+Therefore - if you override the constructor and have any code that affects or changes the data there - it **will** run - that is usually *not* desired when retrieving data object, so you should make sure you call the `get` functions from a (usually "higher") class that runs a constructor that does not change the data (like the default constructor).
 
 ### `$DefaultCriteria`
 
@@ -509,11 +549,11 @@ All model classes has a "static" property - `$DefaultCriteria`, this is an objec
 Returning to our Spaceship example, we define a `Spaceship` super-model, as before:
 
 ```javascript
-    var Spaceship = {
+    var Spaceship = Model({
         _name$: "",
         TYPE: "",
         crew: [],
-    }.model("Spaceship");
+    }, "Spaceship");
 ```
 
 Then we define a sub-model of `Spaceship`: `Battleship`
@@ -661,7 +701,7 @@ module.exports = new Promise( (resolve,reject)=> {
                         target.integrityHull -= this._DAMAGE;
                     }
                 },
-                _created: function() {
+                _inserted: function() {
                     if (this.$ready) this.$ready.call(this);
                 },
                 // For a weapon-ready callback

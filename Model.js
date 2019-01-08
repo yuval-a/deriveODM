@@ -330,10 +330,10 @@ module.exports = function(options) {
                         return proxy;
                     }
 
-                    _created() {
-                        console.log (this[MainIndex]+" created");
+                    _inserted() {
+                        console.log (this[MainIndex]+" inserted");
                     }
-                    _duplicate() {
+                    _isDuplicate() {
                         console.log (this[MainIndex]+" has a duplicate key value!");
                     }
                     _error(msg) {
@@ -343,7 +343,7 @@ module.exports = function(options) {
                         console.log (this[MainIndex]+":",property,"changed from",oldValue,"to",newValue);
                     }
 
-                    $update (property, value, callback) {
+                    $onUpdate (property, value, callback) {
                         //console.log ("ADDING UPDATE CALLBACK");
                         syncManager.addUpdateCallback(this._id, property, value, callback);
                         //setPropByPath.call(this, property, value);
