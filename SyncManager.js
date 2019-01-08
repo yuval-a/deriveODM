@@ -318,12 +318,10 @@ var SyncManager = {
                             if (!insertDocs.length) return Promise.resolve();
 
                             return new Promise ( (resolve, reject)=> {
-                                console.time("inserts");
                                 this.lockInsert();
-                                console.log ("Running "+insertDocs.length+" inserts...");
+                                if (DebugMode) console.log ("Running "+insertDocs.length+" inserts...");
                                 this.collection.insertMany(insertDocs, {ordered:false}).then(
                                     res=> {
-                                        console.timeEnd("inserts"); 
                                         resolve();
                                         var inserted = Object.values(res.insertedIds);
                                         if (inserted.length !== insertDocs.length) {
@@ -369,7 +367,7 @@ var SyncManager = {
                             return new Promise ( (resolve,reject)=> {
                                 //console.time("updates");
                                 this.lockUpdate();
-                                console.log ("Handling "+updates.length+" updates...");
+                                if (DebugMode) console.log ("Handling "+updates.length+" updates...");
                                 this.collection.bulkWrite(updates).then(
                                     res=> {
                                         //console.timeEnd("updates");
@@ -444,8 +442,10 @@ var SyncManager = {
 
                         sync() {
                             if (this.PENDING) {
-                                console.log ("Sync for "+this.collection+" canceled. Previous sync already pending");
-                                console.log (Object.keys(this.BULK.inserts).length+" inserts pending. "+this.BULK.updates.length+" updates pending.");
+                                if (DebugMode) {
+                                    console.log ("Sync for "+this.collection+" canceled. Previous sync already pending");
+                                    console.log (Object.keys(this.BULK.inserts).length+" inserts pending. "+this.BULK.updates.length+" updates pending.");
+                                }
                                 return;
                             }
 
@@ -469,17 +469,17 @@ var SyncManager = {
 
                             var syncer = this;
                             if (updates.length) {
-                                console.log (syncer.collectionName+": running "+updates.length+" updates...");
+                                if (DebugMode) console.log (syncer.collectionName+": running "+updates.length+" updates...");
                             }
 
                             syncer.handleUpdates (updates);
                             if (Object.keys(this.BULK.inserts).length) {
-                                console.log (syncer.collectionName+": running "+Object.keys(this.BULK.inserts).length+" inserts...");
+                                if (DebugMode) console.log (syncer.collectionName+": running "+Object.keys(this.BULK.inserts).length+" inserts...");
                             }
                             syncer.handleInserts()
                             .then(function() { 
                                 if (xupdates.length) {
-                                    console.log (syncer.collectionName+": running "+xupdates.length+" xupdates...");
+                                    if (DebugMode) console.log (syncer.collectionName+": running "+xupdates.length+" xupdates...");
                                 }
                                 return syncer.handleUpdates(xupdates);
                             })
