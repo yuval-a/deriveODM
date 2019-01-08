@@ -53,7 +53,7 @@ are actually saved on the database, or exactly when specific properties have bee
 ## Getting Started
 
 Install via [npm](https://www.npmjs.com/):
-`npm install derivejs`
+`npm install derivejs` <br>
 or clone the [git repository](https://github.com/yuval-a/derivejs).
 
 You should also setup or have access to a [MongoDB](https://www.mongodb.com/) server, and have it running.
