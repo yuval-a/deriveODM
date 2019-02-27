@@ -4,6 +4,7 @@ module.exports = {
     indexName: "_id",
     Create: function(document) {
         document._id = new ObjectID();
+        if (document._created) document._created();
         return document;
     },
     Update: 
