@@ -158,8 +158,10 @@ Your `_id` values will vary, of-course.
 * `_created()` was changed to `_inserted()`
 * `_duplicate()` was changed to `_isDuplicate()`
 * `$update()` was changed to `$onUpdate()`
-
+* added support for `_created()` method which, if defined on a model, gets called once an object instance is created, **before** it is persisted in the db.
 Every instance of an object has some built-in "callback" functions that are called when certain database-persistence related events occur in regards to that object, and each data class also have some "static" callback methods, so you can use them in situations when you need to follow certain events, like having an object inserted to the database collection, having a certain property updated, and more.
+One possible use-case for `created()` is, for example, if you need to set a value for a **unique index** property, before it is inserted into the db; if you won't
+set it, and a default value will be used for it when inserting, then a "duplicate value" error could be triggered.
 
 #### Database persistence callbacks
 
