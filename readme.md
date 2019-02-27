@@ -268,7 +268,7 @@ Each Model class also has an `$onUpdate()` method, that you can use if you need 
 a certain property has been **updated and saved on the database**. The `$onUpdate()` method is used as follows:
 
 ```javascript 
-$onUdate (property, value, callback)
+$onUpdate (property, value, callback)
 ```
 `callback` is a function that will be executed the next time that `property` is set to `value`.
 Note that `property` is a **string**. If the property is nested, simply use its nested notation as a string, e.g.
