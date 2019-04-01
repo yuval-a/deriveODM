@@ -923,7 +923,23 @@ Post.join("user@email.com","Users","_authorId","_userId","author").then(
 ```
 Note: Use join to join with a single document from another collection.
 
-### joinAll (coming soon)
+### `joinAll`
+`joinAll` lets you join data from two separate collections, and return multiple results.
+The function accepts the following arguments:
+`which` is the criteria for the document to retrieve from the "primary" ("local" collection),
+`joinOpts` is an object with different options regarding the join:
+    `joinWith`: the name of the "secondary" ("foreign") collection (as a string).
+    `localField`: the name of the field that is equivalent to the `foreignField` on the secondary collection.
+    `foreignField`: the name of the field on the joined collection, equivalent to `localField`
+    `joinAs` is the name of a property where the "joined" document will be included into.
+`findOpts` lets you specify additional "post-find" options, an object that can contain the following:
+    `sortBy`: to return results sorted by a certain index, use Mongo's format for a sort-object,
+        e.g.: `{_date:-1}`, this will sort by the `_date` index in a **descending** order. To sort in an ascending
+        order, use `1` (positive 1) as the value.
+    `skip`: lets you skip a number of results,
+    `limit`: lets you limit the number of results returned.    
+`returnAsModel` if set to true, then the function will return an instance of the model (as in when using the `get` function) - see notes about this in the documentation for `join`, and why you should almost never need to set this to
+`true`.
 
 ### Access the "raw" mongoDB collection object
 Although DeriveJS is designed, written, and intended to be in charge of all data persistence operations transparently in the background without direct interference,

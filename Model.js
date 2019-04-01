@@ -447,7 +447,64 @@ module.exports = function(options) {
                         });
                     }
 
-                    static getAll(which,limit=0) {
+                    static joinAll(which, joinOpts, findOpts, returnAsModel=false) {
+                        //joinWith,localField,foreignField,joinAs,returnAsModel=false) {
+                        var thisclass = this;
+                        return new Promise( (resolve,reject)=> {
+                            var criteria = Object.assign({},ModelClass.$DefaultCriteria);
+                            if (typeof which === "object" && which.constructor.name === "DBRef") {
+                                criteria['_id'] = which.oid;
+                            }
+                            else {
+                                if (typeof which === "object")
+                                    Object.assign (criteria, which);
+                                else 
+                                    criteria[MainIndex] = which;
+                            }
+                            let sort = ( findOpts.sortBy ? findOpts.sortBy : {MainIndex:-1} );
+                            syncManager.collection.aggregate([
+                                {
+                                    $lookup:
+                                    {
+                                        from: joinOpts.joinWith,
+                                        localField: joinOpts.localField,
+                                        foreignField: joinOpts.foreignField,
+                                        as: joinOpts.joinAs
+                                    }
+
+                                },
+                                { $unwind : "$"+joinOpts.joinAs },
+                                { $match: criteria },
+                                { $sort: sort },
+                                { $skip: findOpts.skip },
+                                { $limit: findOpts.limit }
+
+                            ], function (err,docs) {
+                                if (err) {
+                                    console.log ("join error:",err);
+                                    reject (err);
+                                    return;
+                                }
+                                if (docs && docs.length) {
+                                    if (returnAsModel) {
+                                        var all = [];
+                                        docs.forEach(doc=> {
+                                            modelGet = doc;
+                                            all.push(new thisclass());
+                                        });
+                                        resolve (all);
+                                    }
+                                    else {
+                                        resolve(docs);
+                                    }
+                                }
+                                else reject("join: Document "+(which._id?which._id:"")+" not found!");
+                            });
+                        });
+                    }
+
+                    // sort by is an object of {index:<1 or -1>} s
+                    static getAll(which,sortBy,limit=0,skip=0) {
                         return new Promise( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
                             if (which) {
@@ -456,8 +513,15 @@ module.exports = function(options) {
                                 else 
                                     criteria[MainIndex] = which;
                             }
+
+                            let sort = ( sortBy ? sortBy : {MainIndex:-1} );
                             var all = [], allDocs;
-                            allDocs = syncManager.collection.find(criteria).limit(limit).toArray()
+
+                            allDocs = syncManager.collection.find(criteria,{
+                                sort:sort,
+                                skip:skip,
+                                limit:limit
+                            }).toArray()
                             .then(alldocs=> {
                                 alldocs.forEach(doc=> {
                                     modelGet = doc;
@@ -488,6 +552,27 @@ module.exports = function(options) {
                             });
                         });
                     }
+
+                    static unsetAll(which, property) {
+                        return new Promise( (resolve,reject)=> {
+                            var criteria = Object.assign({},ModelClass.$DefaultCriteria);
+                            if (which) {
+                                if (typeof which === "object")
+                                    Object.assign (criteria, which);
+                                else 
+                                    criteria[MainIndex] = which;
+                            }
+
+                            syncManager.collection.updateMany (
+                                criteria,
+                                { $unset: { [property]: "" } },
+                                { upsert: false }
+                            ).then(res=> {
+                                resolve();
+                            });
+                        });
+                    }
+                    
 
                     static map(which, index, returnArray) {
                         return new Promise( (resolve,reject)=> {
@@ -553,6 +638,7 @@ module.exports = function(options) {
                             
                             for (var i=0,len=keys.length;i<len;i++) {
                                 key = keys[i];
+                                console.log ("Remodeling key "+key);
                                 value = model[key]
                                 if (key.lastIndexOf('_') === key.length-1) key = key.slice(0,-1);
                                 if (key.lastIndexOf('$') === key.length-1) key = key.slice(0,-1);
