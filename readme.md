@@ -7,7 +7,7 @@ It wraps your data classes and objects with [Javascript Proxies](https://develop
 and running bulk operations in fixed (settable) intervals. The background engine is mostly handled transparently by a module called `SyncManager`.
 
 ### The rationle behind DeriveJS using an analogy
-If you are familiar with a front-end UI framework suc as ReactJS, you know that whenever a change is made to the `state` object - React will automatically know to issue a re-render of the component - this is called a "pull" methodology, where as in other similar frameworks, you might need to explicitly call a `render()` method (this is a "push" methodology, in that context).
+If you are familiar with a front-end UI framework such as ReactJS, you know that whenever a change is made to the `state` object - React will automatically know to issue a re-render of the component - this is called a "pull" methodology, where as in other similar frameworks, you might need to explicitly call a `render()` method (this is a "push" methodology, in that context).
 In a similar way - when you using Derive - you are **not required** to call an explicit `save()` method to have your data be saved and persisted on a db - it's enough that you make some change to an exisiting data object, or create a new one - and Derive will already know to handle that data's persistence.
 
 ## How to use
