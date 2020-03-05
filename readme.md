@@ -170,8 +170,8 @@ set it, and a default value will be used for it when inserting, then a "duplicat
 
 #### new Model instance lifecycle
 When creating a new model object instance - first the, "internal" constructor of the model class is called. 
-This constructor is defined within the `Model` module, and is the same for **all** model classes (having different initialization properties, of-course). This constructor function is basically in-charge of the following things, in this order:
-0. If the constructor was called as a result of retrieving a data object (document) from the database - the object values will be populated accordingly.
+This constructor is defined within the `Model` module, and is the same for **all** model classes (having different initialization properties, of-course). First, if the constructor was called as a result of retrieving a data object (document) from the database - the object values will be populated accordingly. Then, this constructor function is basically in-charge of the following things, in this order:
+
 1. "Proxifiying" all (non-meta) property values of the object (so they can all be automatically persisted to the db upon change).
 2. Starting (running) the associated `SyncManager` class (if it's not already running) - which will "gather" db-related operations and bulk-run them in fixed intervals for the associated db collection).
 3. If this is a **new** data object - create a **local** data (MongoDB) document first - this is the point where the `_created` function of the data class is called (if defined) - and is the "last chance" to make new changes before the data object will be persisted on the db (of-course, you can also update any of its properties as you like later-on, and they'll be persisted as well).
