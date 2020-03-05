@@ -22,6 +22,8 @@ function setPropByPath(prop, value) {
 
 module.exports = function(options) {
 
+  const DebugMode = options.hasOwnProperty("debugMode") ? options.debugMode : true;
+  
   return new Promise( (resolve,reject)=> {
 
     SyncManager.init(options).then(
@@ -70,7 +72,7 @@ module.exports = function(options) {
                                 return Reflect.set(target,property,value,receiver);
                             }
                         },
-                        allowedGet: [ 'inspect', 'toBSON', 'toJSON', '_bsontype', 'then' ],
+                        allowedGet: [ 'inspect', 'toBSON', 'toJSON', '_bsontype', 'then', '_created' ],
                         get: function(target, property, receiver) {
                             //console.log ("get: ",property," called on ",target);
                             if (typeof property === "symbol" || this.allowedGet.indexOf(property)>-1 || property.indexOf('$')===0)
@@ -331,16 +333,16 @@ module.exports = function(options) {
                     }
 
                     _inserted() {
-                        console.log (this[MainIndex]+" inserted");
+                        if (DebugMode) console.log (this[MainIndex]+" inserted");
                     }
                     _isDuplicate() {
-                        console.log (this[MainIndex]+" has a duplicate key value!");
+                        if (DebugMode) console.log (this[MainIndex]+" has a duplicate key value!");
                     }
                     _error(msg) {
-                        console.log ("Error in "+this[MainIndex]+": "+msg);
+                        if (DebugMode) console.log ("Error in "+this[MainIndex]+": "+msg);
                     }
                     changed(property, newValue, oldValue) {
-                        console.log (this[MainIndex]+":",property,"changed from",oldValue,"to",newValue);
+                        if (DebugMode) console.log (this[MainIndex]+":",property,"changed from",oldValue,"to",newValue);
                     }
 
                     $onUpdate (property, value, callback) {

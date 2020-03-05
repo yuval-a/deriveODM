@@ -168,6 +168,37 @@ Every instance of an object has some built-in "callback" functions that are call
 One possible use-case for `created()` is, for example, if you need to set a value for a **unique index** property, before it is inserted into the db; if you won't
 set it, and a default value will be used for it when inserting, then a "duplicate value" error could be triggered.
 
+#### new Model instance lifecycle
+When creating a new model object instance - first the, "internal" constructor of the model class is called. 
+This constructor is defined within the `Model` module, and is the same for **all** model classes (having different initialization properties, of-course). This constructor function is basically in-charge of the following things, in this order:
+0. If the constructor was called as a result of retrieving a data object (document) from the database - the object values will be populated accordingly.
+1. "Proxifiying" all (non-meta) property values of the object (so they can all be automatically persisted to the db upon change).
+2. Starting (running) the associated `SyncManager` class (if it's not already running) - which will "gather" db-related operations and bulk-run them in fixed intervals for the associated db collection).
+3. If this is a **new** data object - create a **local** data (MongoDB) document first - this is the point where the `_created` function of the data class is called (if defined) - and is the "last chance" to make new changes before the data object will be persisted on the db (of-course, you can also update any of its properties as you like later-on, and they'll be persisted as well).
+4. The `SyncManager` puts an `insert` operation for the next queue.
+
+It's important to note, that if you extend a Model class, and define both a constructor on the extended class **and** a `_created` method - 
+the `_created` method will be called **before** the extended class constructor finishes - as it needs to call the base class ("super") constructor first, which will call `_created` if defined.
+So, for example with the following:
+
+```javascript
+    var Spaceship = Model({
+        _name: "",
+    }, "Spaceship");
+
+    class Ship extends Spaceship {
+        constructor (_name) {
+            super(_name);
+            console.log (_name+" called from constructor");
+        }
+        _created() {
+            console.log (this._name+" called from _created");
+        }
+    }
+```
+You will first see the console.log message from the `_created` and then the message from the (extended class) constructor.
+After a short while, when the document is inserted on the db - you will see messages logged from the `_inserted` method (if a console.log was defined there and `debugMode` was defined with `true` when initializing the Model module).
+
 #### Database persistence callbacks
 
 * `_inserted()`

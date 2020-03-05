@@ -26,7 +26,7 @@ var SyncManager = {
 
         if (options) {
                 if (typeof options === "string") {
-                    this.dbUrl = options
+                    this.dbUrl = options;
                 }
                 else if (typeof options === "object")
                     for (var o in options)
@@ -340,8 +340,6 @@ var SyncManager = {
                                     }
                                 )
                                 .catch (err=> {
-                                    console.log ("HAS INSERT ERRORS!");
-                                    console.dir (err,{depth:null});
                                     if (err.writeErrors && err.writeErrors.length) {
                                         var we = err.writeErrors, ins;
                                         for (let e of we) {
