@@ -175,7 +175,7 @@ This constructor is defined within the `Model` module, and is the same for **all
 1. "Proxifiying" all (non-meta) property values of the object (so they can all be automatically persisted to the db upon change).
 2. Starting (running) the associated `SyncManager` class (if it's not already running) - which will "gather" db-related operations and bulk-run them in fixed intervals for the associated db collection).
 3. If this is a **new** data object - create a **local** data (MongoDB) document first - this is the point where the `_created` function of the data class is called (if defined) - and is the "last chance" to make new changes before the data object will be persisted on the db (of-course, you can also update any of its properties as you like later-on, and they'll be persisted as well).
-4. The `SyncManager` puts an `insert` operation for the next queue.
+4. The `SyncManager` puts an `insert` operation in the queue of the next bulk db operations to be run.
 
 It's important to note, that if you extend a Model class, and define both a constructor on the extended class **and** a `_created` method - 
 the `_created` method will be called **before** the extended class constructor finishes - as it needs to call the base class ("super") constructor first, which will call `_created` if defined.
