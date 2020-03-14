@@ -698,7 +698,7 @@ There will also be the `_id` index defined, as usual.
 
 ## Putting it all together:
 The following is a complete demonstration, expanding on the `Spaceship` idea and models. <br>
-The following code examples can also be found in [this github repository](https://github.com/yuval-a/spaceships-derivejs-demv).
+The following code examples can also be found in [this github repository](https://github.com/yuval-a/spaceships-derivejs-demo).
 
 ### Defining our models
 First we define all of our data models, in a separate `Models.js` file:
