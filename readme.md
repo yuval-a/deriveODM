@@ -65,13 +65,22 @@ or clone the [git repository](https://github.com/yuval-a/derivejs).
 
 You should also setup or have access to a [MongoDB](https://www.mongodb.com/) server, and have it running.
 
-To get started, require DeriveJS, and then call the `Model` module. The module is a `Promise` that resolves with a `Model` function. By the time the Promise is resolved, the module has finished its initializations, and is connected to the MongoDB server. When you call the module, you should pass an `options` argument to it.
-The `options` can contain 3 key:value arguments:
+To get started, require DeriveJS, and then call the `Model` module. The module is a `Promise` that resolves with a `Model` function. By the time the Promise is resolved, the module has finished its initializations, and is connected to the MongoDB server. When you call the module, you can pass an `options` object argument to it.
+The `options` can contain these key:value arguments:
 
 * `dbUrl`: the MongoDB server connection url, as a string. Default: "`mongodb://localhost:27017/`".
 * `dbName`: the name of the database, as a string. Default: "`deriveDB`".
 * `debugMode`: A boolean. If set to true - will display some real-time internal `SyncManager` information - such as when it is locked for operation (before running bulk database operations), and unlocked. Default: `true` (!)
 * `defaultMethodsLog`: (new in version 1.x) - when set to `true` - the default class methods for database/data events (`_inserted()`, `_isDuplicate()`, `_error()` and `changed()` will run a relevant `console.log`, see [Database persistence callbacks](#database-persistence-callbacks) for more information about these methods).
+* `dbOptions`: You can use this to override the default [MongoDB driver connection options](https://mongodb.github.io/node-mongodb-native/3.5/reference/connecting/connection-settings/). Note that these are the options passed by default:
+```json
+w:1, 
+native_parser:true, 
+forceServerObjectId:true,
+// New in 3.X Mongo engine
+useUnifiedTopology: true,
+ignoreUndefined: true
+```
 
 Here is an example of how to initialize the module:
 
