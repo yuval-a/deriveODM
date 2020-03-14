@@ -22,7 +22,8 @@ function setPropByPath(prop, value) {
 
 module.exports = function(options) {
 
-  const DebugMode = options.hasOwnProperty("debugMode") ? options.debugMode : true;
+  const DebugMode         = options.hasOwnProperty("debugMode") ? options.debugMode : true;
+  const DefaultMethodsLog = options.hasOwnProperty("defaultMethodsLog") ? options.defaultMethodsLog : true;
   
   return new Promise( (resolve,reject)=> {
 
@@ -279,7 +280,7 @@ module.exports = function(options) {
                                 else 
                                     criteria[MainIndex] = which;
                             }
-                            syncManager.collection.remove(criteria)
+                            syncManager.collection.deleteMany(criteria)
                             .then(res=> {
                                 if (res.result.ok==1) resolve();
                                 else reject();
@@ -333,16 +334,16 @@ module.exports = function(options) {
                     }
 
                     _inserted() {
-                        if (DebugMode) console.log (this[MainIndex]+" inserted");
+                        if (DefaultMethodsLog) console.log (this[MainIndex]+" inserted");
                     }
                     _isDuplicate() {
-                        if (DebugMode) console.log (this[MainIndex]+" has a duplicate key value!");
+                        if (DefaultMethodsLog) console.log (this[MainIndex]+" has a duplicate key value!");
                     }
                     _error(msg) {
-                        if (DebugMode) console.log ("Error in "+this[MainIndex]+": "+msg);
+                        if (DefaultMethodsLog) console.log ("Error in "+this[MainIndex]+": "+msg);
                     }
                     changed(property, newValue, oldValue) {
-                        if (DebugMode) console.log (this[MainIndex]+":",property,"changed from",oldValue,"to",newValue);
+                        if (DefaultMethodsLog) console.log (this[MainIndex]+":",property,"changed from",oldValue,"to",newValue);
                     }
 
                     $onUpdate (property, value, callback) {
@@ -429,12 +430,13 @@ module.exports = function(options) {
                                 {
                                     $match: criteria
                                 }
-                            ], function (err,doc) {
+                            ], function (err, cursor) {
                                 if (err) {
                                     console.log ("join error:",err);
                                     reject (err);
                                     return;
                                 }
+                                let doc = cursor.toArray();
                                 if (doc && doc.length) {
                                     if (returnAsModel) {
                                         modelGet = doc[0];
@@ -481,12 +483,13 @@ module.exports = function(options) {
                                 { $skip: findOpts.skip },
                                 { $limit: findOpts.limit }
 
-                            ], function (err,docs) {
+                            ], function (err, cursor) {
                                 if (err) {
                                     console.log ("join error:",err);
                                     reject (err);
                                     return;
                                 }
+                                let docs = cursor.toArray();
                                 if (docs && docs.length) {
                                     if (returnAsModel) {
                                         var all = [];
@@ -664,7 +667,6 @@ module.exports = function(options) {
                             bulk.execute()
                             .then(
                                 res=> {
-                                    //console.log ("result: ",res.ok);
                                     resolve(res.ok);
                                 },
                                 err=>{

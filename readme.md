@@ -57,6 +57,8 @@ are actually saved on the database, or exactly when specific properties have bee
 
 ## Getting Started
 
+(**Note**: Version 1.x has been updated to support MongoDB Node driver version 3.x. Although it has been tested - if you encounter any issues when upgrading - please report them in the issues tab - in the Git repository)
+
 Install via [npm](https://www.npmjs.com/):<br>
 `npm install derivejs` <br>
 or clone the [git repository](https://github.com/yuval-a/derivejs).
@@ -69,6 +71,7 @@ The `options` can contain 3 key:value arguments:
 * `dbUrl`: the MongoDB server connection url, as a string. Default: "`mongodb://localhost:27017/`".
 * `dbName`: the name of the database, as a string. Default: "`deriveDB`".
 * `debugMode`: A boolean. If set to true - will display some real-time internal `SyncManager` information - such as when it is locked for operation (before running bulk database operations), and unlocked. Default: `true` (!)
+* `defaultMethodsLog`: (new in version 1.x) - when set to `true` - the default class methods for database/data events (`_inserted()`, `_isDuplicate()`, `_error()` and `changed()` will run a relevant `console.log`, see [Database persistence callbacks](#database-persistence callbacks) for more information about these methods).
 
 Here is an example of how to initialize the module:
 
@@ -121,7 +124,7 @@ Example: `_name$`, will define a *unique index* called `_name` (notice - the `$`
 
 * `$` (start) - Putting the Dollar sign as the **first** character of a property name - will define it as a "**meta**" property (aka a "secret" property). A meta property will **not** be considered as part of the data structure of the model - it and its value will **not** be persisted on the database. If you iterate over the values of the data instance - it will **not** appear (it won't be enumerable). But you may **still** get and set its value locally. This is useful for saving some additional information that you only need locally, and does not require persistence on the database server. These can also be used to reference callback functions, as demonstrated later-on.<br>
 There are also, in-fact, three "built-in" meta properties,  two are automatically created for each object:
-one is`$_ModelInstance` which always equal to `true`, and is used internally when setting a DeriveJS object value  to an instance of another DeriveJS object (in which case it will be saved as a DBRef object), and the other meta property is [`$DefaultCriteria`](#defaultcriteria) (which is explained later). The third one is [`$Listen`](#listening-for-changes), and is not created automatically but can be defined as an array of property names that you want their value-changes to be "listened" to (as explained in "[Listening for changes](#listening-for-changes)").
+one is`$_ModelInstance` which always equal to `true`, and is used internally when setting a DeriveJS object value  to an instance of another DeriveJS object (in which case it will be saved as a DBRef object), and the other meta property is [`$DefaultCriteria`](#defaultcriteria) (which is explained later). The third one is [`$Listen`](#listening-for-local-changes), and is not created automatically but can be defined as an array of property names that you want their value-changes to be "listened" to (as explained in "[Listening for changes](#listening-for-local-changes)").
 
 * `_` (end) - Using a `_` character as the **last** character in the end of a property name, will add the property **and** its value to the [`$DefaultCriteria`](#defaultcriteria) object, (note, the last `_` will be omitted from the property name). 
 If using both last `_` and last `$` (i.e. setting both a unique index and a default-criteria value, make sure the `_` is the **last** character, and the `$` is one before it).
@@ -485,7 +488,8 @@ most of these are wrappers around certain Mongo `find` queries, which will make 
 
 There are 4 methods that can be used to retrieve data from the database, here is a brief explanation for each:
 * `get` returns **one** object instance.
-* `getAll` returns **all** (with an optional filter query) object instances (in an array).
+* `getAll` returns **all** (with an optional filter query) object instances (in an array). There are 3 more additional optional arguments:
+`sortBy` - to specify a different index to sort by, using an object such as `{<indexName>: <-1 or 1>}` - use `-1` for descending order, and `1` for ascending (the default is `{MainIndex:-1}`), `limit` - to limit the number of returned results (default is `0`, which is unlimited), `skip` to specify an offset index for retrieved results (default is `0`).
 * `map` returns **all** (with an optional filter query) object instances mapped by an index as an object, or as an array.
 * `has` returns a boolean indicating if the database contains certain value(s).
 

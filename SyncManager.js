@@ -18,7 +18,10 @@ var SyncManager = {
     dbOptions: {
         w:1, 
         native_parser:true, 
-        forceServerObjectId:true
+        forceServerObjectId:true,
+        // New in 3.X Mongo engine
+        useUnifiedTopology: true,
+        ignoreUndefined: true
     },
 
     Mapper: ModelMapper,
@@ -35,8 +38,8 @@ var SyncManager = {
 
         return new Promise ( (resolve,reject)=> {
 
-            MongoClient
-            .connect( this.dbUrl )
+            new MongoClient(this.dbUrl, this.dbOptions)
+            .connect()
             .then(client=>client.db(this.dbName))
             .then(
 
@@ -312,6 +315,14 @@ var SyncManager = {
                         }
                         //syncManager.addUpdateCallback(this._id,property,value,callback);
 
+                        handleInsertResults(inserted) {
+                            let inserts = this.BULK.inserts, _id;
+                            for (let i=0,len=inserted.length;i<len;i++) {
+                                _id = inserted[i];
+                                if (inserts[_id]) inserts[_id]._inserted();
+                            }
+                        }
+
                         handleInserts() {
                             var inserts = this.BULK.inserts,
                                 insertDocs = Object.values(inserts);
@@ -330,27 +341,33 @@ var SyncManager = {
                                         }
                                         // Handle inserts
                                         if (inserted.length) {
-                                            var _id;
-                                            for (let i=0,len=inserted.length;i<len;i++) {
-                                                _id = inserted[i];
-                                                if (inserts[_id])
-                                                    inserts[_id]._inserted();
-                                            }
+                                            this.handleInsertResults(inserted);
                                         }
                                     }
                                 )
                                 .catch (err=> {
-                                    if (err.writeErrors && err.writeErrors.length) {
-                                        var we = err.writeErrors, ins;
-                                        for (let e of we) {
-                                            ins = inserts[e.getOperation()._id];
-                                            if (e.code == this.Mapper.Error.DUPLICATE)
+                                    // Mongodb 3.x skips the then in-case of error - but still saves inserted ids on a "result" object
+                                    //console.dir (err, {depth: null});
+                                    let result = err.result, 
+                                        inserted = result.getInsertedIds(),
+                                        op;
+                                    if (result.hasWriteErrors()) {
+                                        var writeErrors = result.getWriteErrors(), ins;
+                                        for (let we of writeErrors) {
+                                            op = we.getOperation();
+                                            ins = inserts[op._id];
+                                            delete inserts[op._id];
+                                            if (we.code == this.Mapper.Error.DUPLICATE)
                                                 ins._isDuplicate();
                                             else
-                                                ins._error(e.errmsg);
-
+                                                ins._error(we.errmsg);
                                         }
                                     }
+                                    inserted = inserted.map(item=>item._id);
+                                    if (inserted.length) {
+                                        this.handleInsertResults(inserted);
+                                    }
+
                                 })
                                 .then (function() {
                                     this.clearInserts();
