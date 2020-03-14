@@ -430,13 +430,13 @@ module.exports = function(options) {
                                 {
                                     $match: criteria
                                 }
-                            ], function (err, cursor) {
+                            ], async function (err, cursor) {
                                 if (err) {
                                     console.log ("join error:",err);
                                     reject (err);
                                     return;
                                 }
-                                let doc = cursor.toArray();
+                                let doc = await cursor.toArray();
                                 if (doc && doc.length) {
                                     if (returnAsModel) {
                                         modelGet = doc[0];
@@ -483,13 +483,13 @@ module.exports = function(options) {
                                 { $skip: findOpts.skip },
                                 { $limit: findOpts.limit }
 
-                            ], function (err, cursor) {
+                            ], async function (err, cursor) {
                                 if (err) {
                                     console.log ("join error:",err);
                                     reject (err);
                                     return;
                                 }
-                                let docs = cursor.toArray();
+                                let docs = await cursor.toArray();
                                 if (docs && docs.length) {
                                     if (returnAsModel) {
                                         var all = [];
