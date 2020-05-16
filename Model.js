@@ -465,25 +465,27 @@ module.exports = function(options) {
                                 else 
                                     criteria[MainIndex] = which;
                             }
-                            let sort = ( findOpts.sortBy ? findOpts.sortBy : {MainIndex:-1} );
-                            syncManager.collection.aggregate([
+                            let sort = ( findOpts && findOpts.sortBy ? findOpts.sortBy : {MainIndex:-1} );
+                            let aggregate = [{
+                                $lookup:
                                 {
-                                    $lookup:
-                                    {
-                                        from: joinOpts.joinWith,
-                                        localField: joinOpts.localField,
-                                        foreignField: joinOpts.foreignField,
-                                        as: joinOpts.joinAs
-                                    }
+                                    from: joinOpts.joinWith,
+                                    localField: joinOpts.localField,
+                                    foreignField: joinOpts.foreignField,
+                                    as: joinOpts.joinAs
+                                }
+                            },
+                            { $unwind : "$"+joinOpts.joinAs },
+                            { $match: criteria },
+                            { $sort: sort }];
 
-                                },
-                                { $unwind : "$"+joinOpts.joinAs },
-                                { $match: criteria },
-                                { $sort: sort },
-                                { $skip: findOpts.skip },
-                                { $limit: findOpts.limit }
+                            if (findOpts) {
+                                if (findOpts.hasOwnProperty('skip')) aggregate.push({ $skip: findOpts.skip });
+                                if (findOpts.hasOwnProperty('limit')) aggregate.push({ $limit: findOpts.limit });
+                            }
 
-                            ], async function (err, cursor) {
+                            syncManager.collection.aggregate(aggregate, 
+                            async function (err, cursor) {
                                 if (err) {
                                     console.log ("join error:",err);
                                     reject (err);
