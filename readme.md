@@ -1042,3 +1042,7 @@ Then we can implement the `log` function, for example on a `Spaceship` model:
 
     let ship = new Spaceship("The Logger").log("The Logger ship created");
 ```
+
+Notice that in this example - we create a **separate* connection to the DB, for the Logs collection - 
+but this could be done on the same connection with the rest of the models (however it might be a good practice to separate the connection
+for things such as logging).
