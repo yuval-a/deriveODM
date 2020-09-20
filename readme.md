@@ -132,8 +132,8 @@ Example: `_name$`, will define a *unique index* called `_name` (notice - the `$`
 * `ALL_UPPERCASE`, when a property name is defined with all capital letters, it will be marked as **read-only**. If you try to set the value of a read-only property (using the `=` operator) - you will get an error message. Note, that if you also define a read-only property as an *index*, like in the above example - that property will **still** be settable via the constructor arguments (but **not** from anywhere else).
 
 * `$` (start) - Putting the Dollar sign as the **first** character of a property name - will define it as a "**meta**" property (aka a "secret" property). A meta property will **not** be considered as part of the data structure of the model - it and its value will **not** be persisted on the database. If you iterate over the values of the data instance - it will **not** appear (it won't be enumerable). But you may **still** get and set its value locally. This is useful for saving some additional information that you only need locally, and does not require persistence on the database server. These can also be used to reference callback functions, as demonstrated later-on.<br>
-There are also, in-fact, three "built-in" meta properties,  two are automatically created for each object:
-one is`$_ModelInstance` which always equal to `true`, and is used internally when setting a DeriveJS object value  to an instance of another DeriveJS object (in which case it will be saved as a DBRef object), and the other meta property is [`$DefaultCriteria`](#defaultcriteria) (which is explained later). The third one is [`$Listen`](#listening-for-local-changes), and is not created automatically but can be defined as an array of property names that you want their value-changes to be "listened" to (as explained in "[Listening for changes](#listening-for-local-changes)").
+There are also, in-fact, four "built-in" meta properties,  two are automatically created for each object:
+one is`$_ModelInstance` which always equal to `true`, and is used internally when setting a DeriveJS object value  to an instance of another DeriveJS object (in which case it will be saved as a DBRef object), and the other meta property is [`$DefaultCriteria`](#defaultcriteria) (which is explained later). The third one is [`$Listen`](#listening-for-local-changes), and is not created automatically but can be defined as an array of property names that you want their value-changes to be "listened" to (as explained in "[Listening for changes](#listening-for-local-changes)"). The 4th one is `$_BARE` which contains the "raw" (unproxified) document. Setting the values of the $_BARE object - will **not** affect the database.
 
 * `_` (end) - Using a `_` character as the **last** character in the end of a property name, will add the property **and** its value to the [`$DefaultCriteria`](#defaultcriteria) object, (note, the last `_` will be omitted from the property name). 
 If using both last `_` and last `$` (i.e. setting both a unique index and a default-criteria value, make sure the `_` is the **last** character, and the `$` is one before it).
@@ -499,7 +499,10 @@ There are 4 methods that can be used to retrieve data from the database, here is
 * `get` returns **one** object instance.
 * `getAll` returns **all** (with an optional filter query) object instances (in an array). There are 3 more additional optional arguments:
 `sortBy` - to specify a different index to sort by, using an object such as `{<indexName>: <-1 or 1>}` - use `-1` for descending order, and `1` for ascending (the default is `{MainIndex:-1}`), `limit` - to limit the number of returned results (default is `0`, which is unlimited), `skip` to specify an offset index for retrieved results (default is `0`).
-* `map` returns **all** (with an optional filter query) object instances mapped by an index as an object, or as an array.
+* `map` returns **all** (with an optional filter query) object instances mapped by an index as an object, or as an array 
+(according to the third boolean argument `returnArray`). The second argument `index` lets you set the index name that will be used for
+the mapping (set as null to use the default MainIndex). The 4th and 5th arguments are `limit` and `skip` that allows you to get only some of
+the documents.
 * `has` returns a boolean indicating if the database contains certain value(s).
 
 All of these methods can use a [`which`](#which-argument) argument, and to understand how to use it, you need to know about `MainIndex`:
@@ -998,3 +1001,44 @@ there might come a rare occasion where you will need access to the collection ob
 (something that should generally be avoided, and should rarely happen - if you encounder a native MongoDB operation that DeriveJS doesn't enable - I would appreciate if you contact me via Github and tell me about it).
 To get access to the MongoDB collection associated with a data model class, you can call the static method `collection()` of the class, which will return the assosicated [NodeJS MongoDB driver collection object](https://mongodb.github.io/node-mongodb-native/api-generated/collection.html).
 
+### Mixins
+"Mixins" are like "plugins" adding additional functionality to a Model, and can be used on multiple models. 
+To implement a mixin, you use the `use` static function on a Model class, giving it an object literal with **functions** only. Those
+functions will be available to be used by the Model instances.
+A good example will be a "Logger" mixin - that adds the functionality to a model - to write "log" messages to a "Logs collection.
+For example we can create this module:
+
+`Logger.js`
+```javascript
+module.exports = ()=>
+new Promise(async (resolve, reject)=> {
+    let Model = await require('derivejs').Model({
+        dbUrl: "mongodb+srv://master:CatWoman23!@btg-cluster-dgomo.mongodb.net/?retryWrites=true",
+        dbName: "Logs"
+    });
+
+    let Log = Model({
+        _logMessage: "",
+        _date: null
+    },"Log");
+
+    resolve({
+        log(msg) { new Log(msg, Date.now()); }
+    });
+});
+```
+
+Then we can implement the `log` function, for example on a `Spaceship` model:
+
+```javascript        
+    var Spaceship = Model({
+        _name: "",
+        _TYPE: "",
+        crew: []
+    }, "Spaceship");
+
+    let Logger = await require('./Logger')();
+    Spaceship.use(Logger);
+
+    let ship = new Spaceship("The Logger").log("The Logger ship created");
+```

@@ -249,13 +249,10 @@ module.exports = function(options) {
                         return Model (newmodel, name, syncInterval, syncManager, proxyHandle);
                     }
 
-                    /* Possibly will be implemented in future versions 
-                    // Assigns functions in interf to the class instance
-                    static implements(interf) {
-                        //interf = inter.filter(f=>typeof f === "function");
+                    static use(mixin) {
                         var descrp, value;
-                        for (var prop in interf) {
-                            value = interf[prop];
+                        for (var prop in mixin) {
+                            value = mixin[prop];
                             if (typeof value !== "function") continue;
                             descrp = {
                                 enumerable: false,
@@ -265,7 +262,6 @@ module.exports = function(options) {
                             PropDescrp[prop] = descrp;
                         }
                     }
-                    */
 
                     static clear(which) {
                         if (!syncManager.collection) return Promise.resolve();
@@ -330,6 +326,7 @@ module.exports = function(options) {
                         else {
                             syncManager.create(proxy);
                         }
+                        proxy.$_BARE = Object.assign({}, proxy);
                         return proxy;
                     }
 
@@ -579,9 +576,8 @@ module.exports = function(options) {
                             });
                         });
                     }
-                    
 
-                    static map(which, index, returnArray) {
+                    static map(which, index, returnArray, limit=0, skip=0) {
                         return new Promise( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
                             if (which) {
@@ -595,7 +591,7 @@ module.exports = function(options) {
                             if (!index) index = MainIndex;
                             var allmap, allDocs;
                             allmap = (returnArray ? [] : {});
-                            allDocs = syncManager.collection.find(criteria).toArray()
+                            allDocs = syncManager.collection.find(criteria, {skip, limit}).toArray()
                             .then(alldocs=> {
                                 alldocs.forEach(doc=> {
                                     modelGet = doc;
@@ -605,7 +601,6 @@ module.exports = function(options) {
                             });
                         });
                     }
-
 
                     static has(which,returnDocument) {
                         return new Promise ( (resolve,reject)=> {
