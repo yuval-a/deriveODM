@@ -281,8 +281,7 @@ var SyncManager = {
                         }
 
                         update(obj,index,property,value,oldValue) {
-                            var update = this.Mapper.Update(index,property,value),
-                                updateCallback = false;
+                            var update = this.Mapper.Update(index,property,value);
 
                             if (!this.updateLocked) {
                                 this.BULK.updates.push ( update );

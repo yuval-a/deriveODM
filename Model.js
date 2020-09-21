@@ -147,6 +147,7 @@ module.exports = function(options) {
                 
                 // Add secret boolean to know it's a model instance
                 model.$_ModelInstance = name+"s";
+                model.$_BARE = null; // Will be used to contain a "bare" object (unproxified)
                 //if (!model.hasOwnProperty('$UpdateListen')) model.$UpdateListen = {};
                 
                 for (var prop in model) {
