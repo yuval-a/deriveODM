@@ -506,6 +506,7 @@ There are 4 methods that can be used to retrieve data from the database, here is
 the mapping (set as null to use the default MainIndex). The 4th and 5th arguments are `limit` and `skip` that allows you to get only some of
 the documents.
 * `has` returns a boolean indicating if the database contains certain value(s).
+* `count` returns the total number of documents in the DB collection.
 
 All of these methods can use a [`which`](#which-argument) argument, and to understand how to use it, you need to know about `MainIndex`:
 
