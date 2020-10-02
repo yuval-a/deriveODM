@@ -22,7 +22,8 @@ function setPropByPath(prop, value) {
 
 module.exports = function(options) {
 
-  const DebugMode = options.hasOwnProperty("debugMode") ? options.debugMode : true;
+  const DebugMode         = options.hasOwnProperty("debugMode") ? options.debugMode : true;
+  const DefaultMethodsLog = options.hasOwnProperty("defaultMethodsLog") ? options.defaultMethodsLog : true;
   
   return new Promise( (resolve,reject)=> {
 
@@ -146,6 +147,7 @@ module.exports = function(options) {
                 
                 // Add secret boolean to know it's a model instance
                 model.$_ModelInstance = name+"s";
+                model.$_BARE = null; // Will be used to contain a "bare" object (unproxified)
                 //if (!model.hasOwnProperty('$UpdateListen')) model.$UpdateListen = {};
                 
                 for (var prop in model) {
@@ -248,13 +250,10 @@ module.exports = function(options) {
                         return Model (newmodel, name, syncInterval, syncManager, proxyHandle);
                     }
 
-                    /* Possibly will be implemented in future versions 
-                    // Assigns functions in interf to the class instance
-                    static implements(interf) {
-                        //interf = inter.filter(f=>typeof f === "function");
+                    static use(mixin) {
                         var descrp, value;
-                        for (var prop in interf) {
-                            value = interf[prop];
+                        for (var prop in mixin) {
+                            value = mixin[prop];
                             if (typeof value !== "function") continue;
                             descrp = {
                                 enumerable: false,
@@ -264,7 +263,6 @@ module.exports = function(options) {
                             PropDescrp[prop] = descrp;
                         }
                     }
-                    */
 
                     static clear(which) {
                         if (!syncManager.collection) return Promise.resolve();
@@ -279,7 +277,7 @@ module.exports = function(options) {
                                 else 
                                     criteria[MainIndex] = which;
                             }
-                            syncManager.collection.remove(criteria)
+                            syncManager.collection.deleteMany(criteria)
                             .then(res=> {
                                 if (res.result.ok==1) resolve();
                                 else reject();
@@ -329,20 +327,21 @@ module.exports = function(options) {
                         else {
                             syncManager.create(proxy);
                         }
+                        proxy.$_BARE = Object.assign({}, proxy);
                         return proxy;
                     }
 
                     _inserted() {
-                        if (DebugMode) console.log (this[MainIndex]+" inserted");
+                        if (DefaultMethodsLog) console.log (this[MainIndex]+" inserted");
                     }
                     _isDuplicate() {
-                        if (DebugMode) console.log (this[MainIndex]+" has a duplicate key value!");
+                        if (DefaultMethodsLog) console.log (this[MainIndex]+" has a duplicate key value!");
                     }
                     _error(msg) {
-                        if (DebugMode) console.log ("Error in "+this[MainIndex]+": "+msg);
+                        if (DefaultMethodsLog) console.log ("Error in "+this[MainIndex]+": "+msg);
                     }
                     changed(property, newValue, oldValue) {
-                        if (DebugMode) console.log (this[MainIndex]+":",property,"changed from",oldValue,"to",newValue);
+                        if (DefaultMethodsLog) console.log (this[MainIndex]+":",property,"changed from",oldValue,"to",newValue);
                     }
 
                     $onUpdate (property, value, callback) {
@@ -429,12 +428,13 @@ module.exports = function(options) {
                                 {
                                     $match: criteria
                                 }
-                            ], function (err,doc) {
+                            ], async function (err, cursor) {
                                 if (err) {
                                     console.log ("join error:",err);
                                     reject (err);
                                     return;
                                 }
+                                let doc = await cursor.toArray();
                                 if (doc && doc.length) {
                                     if (returnAsModel) {
                                         modelGet = doc[0];
@@ -463,30 +463,33 @@ module.exports = function(options) {
                                 else 
                                     criteria[MainIndex] = which;
                             }
-                            let sort = ( findOpts.sortBy ? findOpts.sortBy : {MainIndex:-1} );
-                            syncManager.collection.aggregate([
+                            let sort = ( findOpts && findOpts.sortBy ? findOpts.sortBy : {MainIndex:-1} );
+                            let aggregate = [{
+                                $lookup:
                                 {
-                                    $lookup:
-                                    {
-                                        from: joinOpts.joinWith,
-                                        localField: joinOpts.localField,
-                                        foreignField: joinOpts.foreignField,
-                                        as: joinOpts.joinAs
-                                    }
+                                    from: joinOpts.joinWith,
+                                    localField: joinOpts.localField,
+                                    foreignField: joinOpts.foreignField,
+                                    as: joinOpts.joinAs
+                                }
+                            },
+                            { $unwind : "$"+joinOpts.joinAs },
+                            { $match: criteria },
+                            { $sort: sort }];
 
-                                },
-                                { $unwind : "$"+joinOpts.joinAs },
-                                { $match: criteria },
-                                { $sort: sort },
-                                { $skip: findOpts.skip },
-                                { $limit: findOpts.limit }
+                            if (findOpts) {
+                                if (findOpts.hasOwnProperty('skip')) aggregate.push({ $skip: findOpts.skip });
+                                if (findOpts.hasOwnProperty('limit')) aggregate.push({ $limit: findOpts.limit });
+                            }
 
-                            ], function (err,docs) {
+                            syncManager.collection.aggregate(aggregate, 
+                            async function (err, cursor) {
                                 if (err) {
                                     console.log ("join error:",err);
                                     reject (err);
                                     return;
                                 }
+                                let docs = await cursor.toArray();
                                 if (docs && docs.length) {
                                     if (returnAsModel) {
                                         var all = [];
@@ -506,7 +509,7 @@ module.exports = function(options) {
                     }
 
                     // sort by is an object of {index:<1 or -1>} s
-                    static getAll(which,sortBy,limit=0,skip=0,fields=[]) {
+                    static getAll(which,sortBy,limit=0,skip=0) {
                         return new Promise( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
                             if (which) {
@@ -523,11 +526,7 @@ module.exports = function(options) {
                                 sort:sort,
                                 skip:skip,
                                 limit:limit
-                            });
-                            if (fields.length) {
-                                allDocs = allDocs.project(fields.reduce((projectObj, field)=> { projectObj[field] = 1; return projectObj; }, {}));
-                            }
-                            allDocs.toArray()
+                            }).toArray()
                             .then(alldocs=> {
                                 alldocs.forEach(doc=> {
                                     modelGet = doc;
@@ -684,7 +683,6 @@ module.exports = function(options) {
                             bulk.execute()
                             .then(
                                 res=> {
-                                    //console.log ("result: ",res.ok);
                                     resolve(res.ok);
                                 },
                                 err=>{
