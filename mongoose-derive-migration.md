@@ -166,6 +166,7 @@ Using instance methods:
         this._email = email;
     }
   }, "Person");
+```
 
 Another option is to use the built-in `$Listen` array to listen for changes to a property, and perform validation in the `changed` function. E.g.:
 ```javascript
@@ -191,8 +192,8 @@ Another option is to use the built-in `$Listen` array to listen for changes to a
 You may simply overwrite data objects using the normal assignment (`=`) operator, and Derive will make sure to update them in the DB as well.
 
 ### Nested documents, and data objects within other data objects.
-Derive supports "nesting" just as Mongo supports it, and it also allows you to save a Derive object within another object (effectively saving a [DBRef](https://docs.mongodb.com/manual/reference/database-references/#dbrefs) 
-in the DB. E.g.:
+Derive supports "nesting" just as Mongo supports it, and it also allows you to save a Derive object within another object (effectively saving a [DBRef](https://docs.mongodb.com/manual/reference/database-references/#dbrefs)) in the DB. E.g.:
+
 ```javascript
 const Spaceship = Model({
     _name$: "",
@@ -222,6 +223,6 @@ var thebeyond = await Spaceship.get("The Beyond");
 var ricard    = await thebeyond.crew[0];
 
 ### Mixins (Plugins).
-Derivee enables the creation of "mixins", via the built-in `use` function, which you can pass an object literal with functions in it - and those functions 
+Derive enables the creation of "mixins", via the built-in `use` function, which you can pass an object literal with functions in it - and those functions 
 will be available to all model instances of that data class. See [the documentation](https://www.npmjs.com/package/derivejs#mixins) for more details.
 
