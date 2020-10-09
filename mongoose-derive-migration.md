@@ -4,7 +4,7 @@ It can also be used as a "migration guide" for people used to Mongoose and are c
 It basically follows Mongoose's features as they are presented in their documentation, and compare it to equalivent features in Derive.
 
 ## Schemas and Models
-A schema is the definition of available data properties in a data model (in derive it is referred to as "model definition"). In both frameworks you use a JS object literal to
+A schema is the definition of available data properties in a data model (in Derive it is referred to as "model definition"). In both frameworks you use a JS object literal to
 describe the schema. Moongose enforce the usage of **strictly typed** data types (you need to define the data type for each property) - while Derive does not enforce data types.
 You may use "default values" in the schema definition in Derive, and they can also be treated as "data type hints" (e.g. a default value of an empty string hints a string value, 
 a default numerical hints a number value, and so on...)
