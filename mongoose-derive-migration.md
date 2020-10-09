@@ -136,7 +136,7 @@ for a full list of options.
 
 ### Error handling
 Every data class instance has built-in functions for error handling (that can be overrided), these are the `_error()` function and `_isDuplicate()` (a function that
-will be called whenever trying to update or insert an object with a duplicate value for a unique index.
+will be called whenever trying to update or insert an object with a duplicate value for a unique index).
 
 ### Constructing
 To create new data object instances, you simply call the native `new` operator, Derive will take care of the rest -- including inserting an equavilent document into the DB:
