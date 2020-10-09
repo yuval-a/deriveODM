@@ -12,6 +12,9 @@ In a similar analogy to the way React works - when using Derive - you are **not 
 
 To sum-up: `DeriveJS` is a reactive ODM (Object Document Mapper), that lets you deal with data, in a DRY way, without having to take care of all the hassle of the logistics of database persistency.
 
+### Comparison to Mongoose
+If you used Mongoose and considering moving to Derive, or would like to see a comparison between the two, you can go over [this document](https://github.com/yuval-a/derivejs/blob/master/mongoose-derive-migration.md).
+
 ## How to use
 It only takes a few easy steps:
 
