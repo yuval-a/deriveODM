@@ -1049,3 +1049,10 @@ Then we can implement the `log` function, for example on a `Spaceship` model:
 Notice that in this example - we create a **separate* connection to the DB, for the Logs collection - 
 but this could be done on the same connection with the rest of the models (however it might be a good practice to separate the connection
 for things such as logging).
+
+### `collectionReady()` (new in version 1.4.1+)
+Whenever a DB operation related to a collection occurs - if that collection doesn't exist yet in the DB, MongoDB implicitly creates it, this can take time (in the area of ~1 second), 
+and thus if you run one of the data getter functions (`get`, `getAll`, `map` etc.) - and the collection was not yet created when reaching that point in your code - you will get an error,
+and the getter function will fail. To prevent this - the `collectionReady` static method was added to Model classes - it returns a promise that resolves when the collection is 
+created and ready for any operations. If the collection already exists the function will resolve immediately. Use `collectionReady` in situations where it's not certain that a 
+collection exist, and you need to run a getter function on it.

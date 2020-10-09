@@ -3,7 +3,7 @@ const clone = require('clone');
 const DBRef = require('mongodb').DBRef;
 
 
-// When calling it, make sure "this" is the object
+/* Unused, but kept because it might be useful in future versions/features 
 function setPropByPath(prop, value) {
     if (typeof prop === "string")
         prop = prop.split(".");
@@ -19,6 +19,7 @@ function setPropByPath(prop, value) {
     } else
         this[prop[0]] = value;
 }
+*/
 
 module.exports = function(options) {
 
@@ -148,7 +149,6 @@ module.exports = function(options) {
                 // Add secret boolean to know it's a model instance
                 model.$_ModelInstance = name+"s";
                 model.$_BARE = null; // Will be used to contain a "bare" object (unproxified)
-                //if (!model.hasOwnProperty('$UpdateListen')) model.$UpdateListen = {};
                 
                 for (var prop in model) {
 
@@ -211,6 +211,53 @@ module.exports = function(options) {
 
                 var ModelClass = 
                 class {
+
+                    constructor() {
+                        Object.defineProperties (this,clone(PropDescrp));
+                        
+                        var p;
+
+                        // if has modelGet then this is a result of a static .get method, and we need to populate the values of the object with the returned values
+                        if (modelGet) {
+                            for (p in modelGet) {
+                                this[p] = modelGet[p];
+                            }
+                        }
+                        // Indexes can be set from constructor arguments
+                        else if (arguments.length) {
+                            for (var argI=0,arglen=arguments.length;argI<arglen;argI++) {
+                                p = indexProps[argI];
+                                this[p] = arguments[argI];
+                            }
+                        }
+
+                        // Proxify object values
+                        var objkeys = Object.keys(this).filter(k=>(typeof this[k] === "object" && this[k] !== null)), key;
+                        for (var i=0,len=objkeys.length;i<len;i++) {
+                            key = objkeys[i];
+                            this[key] = proxyHandle.proxify(this[key],key,this); 
+                        }
+
+                        var readonly = Object.keys(this).filter(key => key.isUpperCase());
+                        for (var i=0,len=readonly.length;i<len;i++) {
+                            p = readonly[i];
+                            Object.defineProperty (this, p, {writable:false});                            
+                        }
+
+                        var proxy = new Proxy(this,proxyHandle.ModelHandler());
+
+                        if (!syncManager.running) syncManager.run();
+
+                        if (modelGet) {
+                            modelGet =  null;
+                        }
+                        else {
+                            syncManager.create(proxy);
+                        }
+                        proxy.$_BARE = Object.assign({}, proxy);
+                        return proxy;
+                    }
+
                     // Returns a "derived class" of ModelClass, extending the model with deriveModel
                     static derive(deriveModel) {
 
@@ -285,52 +332,6 @@ module.exports = function(options) {
                         });
                     }
 
-                    constructor() {
-                        Object.defineProperties (this,clone(PropDescrp));
-                        
-                        var p;
-
-                        // if has modelGet then this is a result of a static .get method, and we need to populate the values of the object with the returned values
-                        if (modelGet) {
-                            for (p in modelGet) {
-                                this[p] = modelGet[p];
-                            }
-                        }
-                        // Indexes can be set from constructor arguments
-                        else if (arguments.length) {
-                            for (var argI=0,arglen=arguments.length;argI<arglen;argI++) {
-                                p = indexProps[argI];
-                                this[p] = arguments[argI];
-                            }
-                        }
-
-                        // Proxify object values
-                        var objkeys = Object.keys(this).filter(k=>(typeof this[k] === "object" && this[k] !== null)), key;
-                        for (var i=0,len=objkeys.length;i<len;i++) {
-                            key = objkeys[i];
-                            this[key] = proxyHandle.proxify(this[key],key,this); 
-                        }
-
-                        var readonly = Object.keys(this).filter(key => key.isUpperCase());
-                        for (var i=0,len=readonly.length;i<len;i++) {
-                            p = readonly[i];
-                            Object.defineProperty (this, p, {writable:false});                            
-                        }
-
-                        var proxy = new Proxy(this,proxyHandle.ModelHandler());
-
-                        if (!syncManager.running) syncManager.run();
-
-                        if (modelGet) {
-                            modelGet =  null;
-                        }
-                        else {
-                            syncManager.create(proxy);
-                        }
-                        proxy.$_BARE = Object.assign({}, proxy);
-                        return proxy;
-                    }
-
                     _inserted() {
                         if (DefaultMethodsLog) console.log (this[MainIndex]+" inserted");
                     }
@@ -349,9 +350,17 @@ module.exports = function(options) {
                         syncManager.addUpdateCallback(this._id, property, value, callback);
                         //setPropByPath.call(this, property, value);
                     }
+
                     static collection() {
                         return syncManager.collection;
                     }
+                    static collectionReady() {
+                        return new Promise ( (resolve,reject)=> {
+                            if (syncManager.collection && syncManager.ready) resolve(true);
+                            else syncManager.once("ready",()=> { resolve(true) });
+                        });
+                    }
+
                     static dereference(dbref) {
                         /*
                         if (dbref.namespace !== this.name+'s') {
@@ -361,6 +370,7 @@ module.exports = function(options) {
                         return this.get({_id:dbref.oid});
 
                     }
+
                     // get functions
                     static get(which) {
                         return new Promise( (resolve,reject)=> {
@@ -396,6 +406,60 @@ module.exports = function(options) {
                             .catch(err=> {
                                 console.log ("model get error catch:",err);
                                 reject (err);
+                            });
+                        });
+                    }
+
+                    // sort by is an object of {index:<1 or -1>} s
+                    static getAll(which,sortBy,limit=0,skip=0) {
+                        return new Promise( (resolve,reject)=> {
+                            var criteria = Object.assign({},ModelClass.$DefaultCriteria);
+                            if (which) {
+                                if (typeof which === "object")
+                                    Object.assign (criteria, which);
+                                else 
+                                    criteria[MainIndex] = which;
+                            }
+
+                            let sort = ( sortBy ? sortBy : {MainIndex:-1} );
+                            var all = [], allDocs;
+
+                            allDocs = syncManager.collection.find(criteria,{
+                                sort:sort,
+                                skip:skip,
+                                limit:limit
+                            }).toArray()
+                            .then(alldocs=> {
+                                alldocs.forEach(doc=> {
+                                    modelGet = doc;
+                                    all.push(new this());
+                                });
+                                resolve (all);
+                            });
+                        });
+                    }
+                    
+                    static map(which, index, returnArray, limit=0, skip=0) {
+                        return new Promise( (resolve,reject)=> {
+                            var criteria = Object.assign({},ModelClass.$DefaultCriteria);
+                            if (which) {
+                                if (typeof which === "object")
+                                    Object.assign (criteria, which);
+                                else 
+                                    criteria[MainIndex] = which
+                                
+                            }
+                            
+                            if (!index) index = MainIndex;
+                            var allmap, allDocs;
+                            allmap = (returnArray ? [] : {});
+                            allDocs = syncManager.collection.find(criteria, {skip, limit}).toArray()
+                            .then(alldocs=> {
+                                alldocs.forEach(doc=> {
+                                    modelGet = doc;
+                                    allmap[doc[index]] = new this();
+                                });
+                                resolve (allmap);
                             });
                         });
                     }
@@ -508,36 +572,6 @@ module.exports = function(options) {
                         });
                     }
 
-                    // sort by is an object of {index:<1 or -1>} s
-                    static getAll(which,sortBy,limit=0,skip=0) {
-                        return new Promise( (resolve,reject)=> {
-                            var criteria = Object.assign({},ModelClass.$DefaultCriteria);
-                            if (which) {
-                                if (typeof which === "object")
-                                    Object.assign (criteria, which);
-                                else 
-                                    criteria[MainIndex] = which;
-                            }
-
-                            let sort = ( sortBy ? sortBy : {MainIndex:-1} );
-                            var all = [], allDocs;
-
-                            allDocs = syncManager.collection.find(criteria,{
-                                sort:sort,
-                                skip:skip,
-                                limit:limit
-                            }).toArray()
-                            .then(alldocs=> {
-                                alldocs.forEach(doc=> {
-                                    modelGet = doc;
-                                    all.push(new this());
-                                });
-                                resolve (all);
-
-                            });
-                        });
-                    }
-
                     static setAll(which, property, value) {
                         return new Promise( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
@@ -578,49 +612,6 @@ module.exports = function(options) {
                         });
                     }
 
-                    static map(which, index, returnArray, limit=0, skip=0) {
-                        return new Promise( (resolve,reject)=> {
-                            var criteria = Object.assign({},ModelClass.$DefaultCriteria);
-                            if (which) {
-                                if (typeof which === "object")
-                                    Object.assign (criteria, which);
-                                else 
-                                    criteria[MainIndex] = which
-                                
-                            }
-                            
-                            if (!index) index = MainIndex;
-                            var allmap, allDocs;
-                            allmap = (returnArray ? [] : {});
-                            allDocs = syncManager.collection.find(criteria, {skip, limit}).toArray()
-                            .then(alldocs=> {
-                                alldocs.forEach(doc=> {
-                                    modelGet = doc;
-                                    allmap[doc[index]] = new this();
-                                });
-                                resolve (allmap);
-                            });
-                        });
-                    }
-
-                    static count(which) {
-                        return new Promise( (resolve,reject)=> {
-                            var criteria = Object.assign({},ModelClass.$DefaultCriteria);
-                            if (which) {
-                                if (typeof which === "object")
-                                    Object.assign (criteria, which);
-                                else 
-                                    criteria[MainIndex] = which
-                                
-                            }
-                            syncManager.collection.countDocuments(criteria)
-                            .then(count=> {
-                                resolve(count);
-                            });                            
-                        });
-
-                    }
-
                     static has(which,returnDocument) {
                         return new Promise ( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
@@ -646,6 +637,23 @@ module.exports = function(options) {
                                 },
                                 err=> { reject(err); }
                             );
+                        });
+                    }
+
+                    static count(which) {
+                        return new Promise( (resolve,reject)=> {
+                            var criteria = Object.assign({},ModelClass.$DefaultCriteria);
+                            if (which) {
+                                if (typeof which === "object")
+                                    Object.assign (criteria, which);
+                                else 
+                                    criteria[MainIndex] = which
+                                
+                            }
+                            syncManager.collection.countDocuments(criteria)
+                            .then(count=> {
+                                resolve(count);
+                            });                            
                         });
                     }
 
@@ -701,7 +709,7 @@ module.exports = function(options) {
                 }
 
                 // Set constructor.name
-                Object.defineProperty (ModelClass, 'name', {value:name});
+                Object.defineProperty (ModelClass, 'name', { value:name });
                 // Set default criteria
                 ModelClass.$DefaultCriteria = $DefaultCriteria;
                 return ModelClass;
