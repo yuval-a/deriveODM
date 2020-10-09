@@ -16,8 +16,7 @@ In Derive this is done in a single step: You use a `Model` function, passing it 
 this is what Mongoose calls "documents" - as to make them equaivelent to Mongo's documents), which you can then create instances of.
 
 ### Ids
-Both framework automatically save documents with an `_id`_ property (of type `ObjectID`). Derive does not allow overrding the default `_id` property, and doing so by adding it to 
-the model definition may yield unexpected results. If you need to use your own `id`, define a different id property (e.g. `_ID`).
+Both frameworks automatically save documents with an `_id`_ property (of type `ObjectID`). Derive does not allow overrding the default `_id` property, and doing so by adding it to the model definition may yield unexpected results. If you need to use your own `id`, define a different id property (e.g. `_ID`).
 
 ### Instance methods
 In Mongoose you can add "user-defined" methods by adding them to the `methods` property of a schema.
