@@ -16,8 +16,7 @@ In Derive this is done in a single step: You use a `Model` function, passing it 
 this is what Mongoose calls "documents" - as to make them equaivelent to Mongo's documents), which you can then create instances of.
 
 ### Ids
-Both framework automatically save documents with an `_id`_ property (of type `ObjectID`). Derive does not allow overrding the default `_id` property, and doing so by adding it to 
-the model definition may yield unexpected results. If you need to use your own `id`, define a different id property (e.g. `_ID`).
+Both frameworks automatically save documents with an `_id`_ property (of type `ObjectID`). Derive does not allow overrding the default `_id` property, and doing so by adding it to the model definition may yield unexpected results. If you need to use your own `id`, define a different id property (e.g. `_ID`).
 
 ### Instance methods
 In Mongoose you can add "user-defined" methods by adding them to the `methods` property of a schema.
@@ -137,7 +136,7 @@ for a full list of options.
 
 ### Error handling
 Every data class instance has built-in functions for error handling (that can be overrided), these are the `_error()` function and `_isDuplicate()` (a function that
-will be called whenever trying to update or insert an object with a duplicate value for a unique index.
+will be called whenever trying to update or insert an object with a duplicate value for a unique index).
 
 ### Constructing
 To create new data object instances, you simply call the native `new` operator, Derive will take care of the rest -- including inserting an equavilent document into the DB:
