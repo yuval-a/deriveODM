@@ -217,7 +217,7 @@ using MongoDB query-format.
 ###### `returnDocument`
 If set to `true` will also return the existing document (as a data object) if it exist.
 ##### Returns
-Returns a Promise. If the document does not exist - the promise resolves with `false`, if the document exits, then if `returnDocument` was set to `true` - 
+Returns a Promise. If the document does not exist - the promise resolves with `false`, if the document exists, then if `returnDocument` was set to `true` - 
 the document will be returned (as a data object), and if `returnDocument` is not `true`, then `true` will be returned.
 The Promise rejects with an error in case an error occured or the operation failed.
 
@@ -305,11 +305,11 @@ localField is the name of the field that is equivalent to the foreignField on th
 joinAs is the name of a property where the "joined" document will be included into. returnAsModel - if set to true, then the function will return an instance of the model (as in when using the get function) - you will most liknition, 
 containing an array of property names you'd like changes to their value to trigger this function.
 #### Arguments
-##### property
+##### `property`
 The name of the property that its value changed.
-##### newValue
+##### `newValue`
 The new value of the property.
-##### oldValue
+##### `oldValue`
 The pevious, old, value of the property.
 
 ### `$onUpdate (property, value, callback)`
@@ -339,4 +339,8 @@ this directly. To add properties and their values to the DefaultCriteria, you pu
 and so you could mark that property as DefaultCriteria - and when you retrieve document/data objects from the DB, the `type:'C'` query will automatically be added by default.
 (see documentation for more information and clearer examples for when it is used).
 
+### `$_BARE`
+A meta property added by default to data object instances, containing a "raw" (unproxied) object.
 
+### `$_ModelInstance`
+This meta property is always equal to `true` and is used internaly by the engine to identify Derive objects. **Do not** override this property in your model definitions.
