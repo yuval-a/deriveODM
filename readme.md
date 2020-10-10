@@ -6,10 +6,6 @@
 It wraps your data classes and objects with [Javascript Proxies](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy), "tapping-in" to native operations such as creating instances (using the normal `new` operator), and updating property values (using the normal assignment operator `=`), and then handling passing database calls to the database in the background, while leveraging MongoDB's bulk operations capabilities in a smart way, to save unnecessary calls to the db engine,
 and running bulk operations in fixed (settable) intervals. The background engine is mostly handled transparently by a module called `SyncManager`.
 
-## Other documents
-* For a comparison between Derive and Mongoose, and a "migration guide" for people used to Mongoose and would like to try out Derive, see [this document](https://github.com/yuval-a/derivejs/blob/master/mongoose-derive-migration.md).
-* For a complete reference of all methods, functions and objects included in Derive, see [this document](https://github.com/yuval-a/derivejs/blob/master/reference.md).
-
 ### The rationale behind DeriveJS, using an analogy
 If you are familiar with a front-end UI framework such as ReactJS, you know that whenever a change is made to the `state` object - React will automatically know to issue a re-render of the component - this is called a "pull" methodology, where as in other similar frameworks, you might need to explicitly call a `render()` method (this is a "push" methodology, in that context).
 In a similar analogy to the way React works - when using Derive - you are **not required** to call an explicit `save()` method to have your data be saved and persisted on a db - it's enough that you make some change to an exisiting data object, or create a new one - and Derive will already know to handle that data's persistence.
@@ -17,10 +13,10 @@ In a similar analogy to the way React works - when using Derive - you are **not 
 To sum-up: `DeriveJS` is a reactive ODM (Object Document Mapper), that lets you deal with data, in a DRY way, without having to take care of all the hassle of the logistics of database persistency.
 
 ### Comparison to Mongoose
-If you used Mongoose and considering moving to Derive, or would like to see a comparison between the two, you can go over [this document](https://github.com/yuval-a/derivejs/blob/master/mongoose-derive-migration.md).
+If you used or using Mongoose and considering moving to Derive, or would like to see a comparison between the two, you can go over [this document](https://github.com/yuval-a/derivejs/blob/master/mongoose-derive-migration.md).
 
 ### Reference
-For a complete reference of the available methods and objects available in Derive - [see this document](https://github.com/yuval-a/derivejs/blob/master/reference.md)
+For a complete reference of all available methods, functions and objects available in Derive - [see this document](https://github.com/yuval-a/derivejs/blob/master/reference.md).
 
 ## How to use
 It only takes a few easy steps:
