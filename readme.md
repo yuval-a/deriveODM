@@ -15,6 +15,9 @@ To sum-up: `DeriveJS` is a reactive ODM (Object Document Mapper), that lets you 
 ### Comparison to Mongoose
 If you used Mongoose and considering moving to Derive, or would like to see a comparison between the two, you can go over [this document](https://github.com/yuval-a/derivejs/blob/master/mongoose-derive-migration.md).
 
+### Reference
+For a complete reference of the available methods and objects available in Derive - [see this document](https://github.com/yuval-a/derivejs/blob/master/reference.md)
+
 ## How to use
 It only takes a few easy steps:
 
