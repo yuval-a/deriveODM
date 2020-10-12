@@ -1022,7 +1022,7 @@ For example we can create this module:
 module.exports = ()=>
 new Promise(async (resolve, reject)=> {
     let Model = await require('derivejs').Model({
-        dbUrl: "mongodb+srv://master:CatWoman23!@btg-cluster-dgomo.mongodb.net/?retryWrites=true",
+        dbUrl: "mongodb://localhost:27017/",
         dbName: "Logs"
     });
 
