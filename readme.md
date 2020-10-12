@@ -13,10 +13,10 @@ In a similar analogy to the way React works - when using Derive - you are **not 
 To sum-up: `DeriveJS` is a reactive ODM (Object Document Mapper), that lets you deal with data, in a DRY way, without having to take care of all the hassle of the logistics of database persistency.
 
 ### Comparison to Mongoose
-If you used Mongoose and considering moving to Derive, or would like to see a comparison between the two, you can go over [this document](https://github.com/yuval-a/derivejs/blob/master/mongoose-derive-migration.md).
+If you used or using Mongoose and considering moving to Derive, or would like to see a comparison between the two, you can go over [this document](https://github.com/yuval-a/derivejs/blob/master/mongoose-derive-migration.md).
 
 ### Reference
-For a complete reference of the available methods and objects available in Derive - [see this document](https://github.com/yuval-a/derivejs/blob/master/reference.md)
+For a complete reference of all available methods, functions and objects available in Derive - [see this document](https://github.com/yuval-a/derivejs/blob/master/reference.md).
 
 ## How to use
 It only takes a few easy steps:
@@ -1022,7 +1022,7 @@ For example we can create this module:
 module.exports = ()=>
 new Promise(async (resolve, reject)=> {
     let Model = await require('derivejs').Model({
-        dbUrl: "mongodb+srv://master:CatWoman23!@btg-cluster-dgomo.mongodb.net/?retryWrites=true",
+        dbUrl: "mongodb://localhost:27017/",
         dbName: "Logs"
     });
 

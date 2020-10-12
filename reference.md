@@ -163,6 +163,15 @@ in their beginning, and if a property was redefined as an index, all those prope
 #### Returns
 A Promise, that resolves if the operation was succesful, or rejects with an error, if there was an error.
 
+### `clear(which)`
+Use `clear` to delete documents from the DB.
+#### Arguments
+###### `which`
+Can be a primitive value, representing the value for the main index (first unique index, or first index, or `_id`), to look for, or an object describing a query 
+using MongoDB query-format.
+#### Returns
+A Promise, that resolves if the operation was succesful, or rejects with an error, if there was an error.
+
 ### Data retrieval methods
 
 #### `get(which)`
