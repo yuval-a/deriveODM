@@ -265,10 +265,10 @@ After a short while, when the document is inserted on the db - you will see mess
 
 #### Database persistence callbacks
 
-* `_inserted()`
+##### `_inserted()`
 
 If you need to know exactly when an object is actually persisted in the database every instance has a built-in instance method: `_inserted()` which is called as soon as it's inserted in the DB.
-You can override that method -- either by extending a class - or defining the method directly inside the model definition -- and put some "post-persistence" code there, if you need.
+You can override that method - either by extending a class - or defining the method directly inside the model definition -- and put some "post-persistence" code there, if you need.
 
 ```javascript
 class Ship extends Spaceship {
@@ -281,8 +281,10 @@ var ship = new Ship("The Created");
 will yield:
 `The Created created, with id: 5a063f842ef67924f4e0f9bb` (with a different id of-course).
 
+##### Defining DB-persistence callbacks for specific instances
 If you want to implement specific callbacks for **specific instances**, you have several ways to achieve this:
 
+###### Set a callback function to a meta property, passed as an argument to the constructor, and call it from within the built-in `_inserted`  
 You can define a meta property on the model, to hold a callback function.
 
 ```javascript
@@ -316,6 +318,7 @@ var ship = new Ship("shipA","", function() {
 
 Note how when overriding a constructor in a child class - you need to specify the indexes as arguments before adding new ones, and of-course, you need to call the parent constructor via `super`.
 
+###### Use events
 Another option is to use an [`EventEmitter`](https://nodejs.org/api/events.html) as a meta value:
 
 ```javascript
@@ -352,20 +355,10 @@ ship.$events.on("created",function() {
 * `_error(msg)` : Called whenever there is a data-related error for this object, and contains by default:
 `console.log ("Error in "+this[MainIndex]+": "+msg);`
 
-
-#### Listening for local changes
-The fourth built-in method can be used when you want to listen for value-changes on certain properties of your object,
-(**Note**: this will trigger on *local* changes to the properties, regardless to their state in the equavilent documents in the database collection)
-
-* `changed(property, newValue, oldValue)`
-
-To register a property for the listener, put its name (as a string) inside an array defined as the `$Listen` meta-property (e.g. `$Listen: [ "property" ,"otherproperty", "objectprop.prop"]`.
-The `changed` method contains this code by default:
-`console.log (this[MainIndex]+":",property,"changed from",oldValue,"to",newValue);`
-
-#### Listening for updates on the database
+##### Listening for updates on the database
 **Note**: `$UpdateListen` from previous versions is currently *deprecated*.
 
+###### `$onUpdate()`
 Each Model class also has an `$onUpdate()` method, that you can use if you need to know exactly when
 a certain property has been **updated and saved on the database**. The `$onUpdate()` method is used as follows:
 
@@ -386,6 +379,15 @@ Also note, that `$onUpdate` **doesn't** actually set the value on `property` - y
    // and then the callback in $onUpdate above will be called
    dataobj.prop = 25;
 ```
+##### Listening for local changes
+The fourth built-in method can be used when you want to listen for value-changes on certain properties of your object,
+(**Note**: this will trigger on *local* changes to the properties, regardless to their state in the equavilent documents in the database collection)
+
+* `changed(property, newValue, oldValue)`
+
+To register a property for the listener, put its name (as a string) inside an array defined as the `$Listen` meta-property (e.g. `$Listen: [ "property" ,"otherproperty", "objectprop.prop"]`.
+The `changed` method contains this code by default:
+`console.log (this[MainIndex]+":",property,"changed from",oldValue,"to",newValue);`
 
 ### Unique indexes
 Now, we decide that we want the `_name` property index to be unique:
