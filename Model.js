@@ -1,5 +1,5 @@
 const SyncManager = require('./SyncManager');
-const clone = require('clone');
+const clone = require('fast-clone');
 const DBRef = require('mongodb').DBRef;
 
 
@@ -258,6 +258,10 @@ module.exports = function(options) {
                         return proxy;
                     }
 
+                    static mainIndex() {
+                        return MainIndex;
+                    }
+                    
                     // Returns a "derived class" of ModelClass, extending the model with deriveModel
                     static derive(deriveModel) {
 
@@ -356,7 +360,7 @@ module.exports = function(options) {
                     }
                     static collectionReady() {
                         return new Promise ( (resolve,reject)=> {
-                            if (syncManager.collection && syncManager.ready) resolve(true);
+                            if (syncManager.collection) resolve(true);
                             else syncManager.once("ready",()=> { resolve(true) });
                         });
                     }

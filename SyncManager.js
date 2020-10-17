@@ -1,3 +1,4 @@
+const clone = require('fast-clone');
 const MongoClient = require('mongodb').MongoClient,
       ModelMapper = require('./MongoModelMapper'),
       EventEmitter = require('events');
@@ -192,6 +193,7 @@ var SyncManager = {
                                 .then(()=> {
                                     this.collection = this.db.collection(collection);
                                     this.ensureIndexes(indexes, uniqueIndexes, false);
+                                    this.emit('ready');
                                     this.unlock();
                                 });
                                 
@@ -214,23 +216,23 @@ var SyncManager = {
                             this.unlockUpdate();
                         }
                         lockInsert() {
+                            if (this.insertLocked) return;
                             this.insertLocked = true;
                             if (DebugMode) console.log (this.collectionName+": Sync manager insert locked");
-
                         }
                         unlockInsert() {
+                            if (!this.insertLocked) return;
                             this.insertLocked = false;
                             this.emit("insertUnlocked");
                             if (DebugMode) console.log (this.collectionName+": Sync manager insert unlocked");
-
-
                         }
                         lockUpdate() {
+                            if (this.updateLocked) return;
                             this.updateLocked = true;
                             if (DebugMode) console.log (this.collectionName+": Sync manager update locked");
-
                         }
                         unlockUpdate() {
+                            if (!this.updateLocked) return;
                             this.updateLocked = false;
                             this.emit("updateUnlocked");
                             if (DebugMode) console.log (this.collectionName+": Sync manager update unlocked");
@@ -314,8 +316,8 @@ var SyncManager = {
                         }
                         //syncManager.addUpdateCallback(this._id,property,value,callback);
 
-                        handleInsertResults(inserted) {
-                            let inserts = this.BULK.inserts, _id;
+                        handleInsertResults(inserted, inserts) {
+                            let _id;
                             for (let i=0,len=inserted.length;i<len;i++) {
                                 _id = inserted[i];
                                 if (inserts[_id]) inserts[_id]._inserted();
@@ -332,23 +334,33 @@ var SyncManager = {
                                 if (DebugMode) console.log ("Running "+insertDocs.length+" inserts...");
                                 this.collection.insertMany(insertDocs, {ordered:false}).then(
                                     res=> {
-                                        resolve();
                                         var inserted = Object.values(res.insertedIds);
+                                        // We clone the inserts here, overwriting the same variable - 
+                                        // so we can unlock and return, freeing the engine to handle more inserts
+                                        inserts = clone(inserts);
+                                        insertDocs = Object.values(inserts);
+                                        this.unlockInsert();
+                                        resolve();
+                                        
                                         if (inserted.length !== insertDocs.length) {
                                             console.log ("insertedIds length different than insertDocs length!");
                                             process.exit();
                                         }
                                         // Handle inserts
                                         if (inserted.length) {
-                                            this.handleInsertResults(inserted);
+                                            this.handleInsertResults(inserted, inserts);
                                         }
                                     }
                                 )
                                 .catch (err=> {
                                     // Mongodb 3.x skips the then in-case of error - but still saves inserted ids on a "result" object
                                     //console.dir (err, {depth: null});
-                                    let result = err.result, 
-                                        inserted = result.getInsertedIds(),
+                                    let result = err.result;
+                                    if (!result) {
+                                        console.log (err.message);
+                                        return;
+                                    } 
+                                    let inserted = result.getInsertedIds(),
                                         op;
                                     if (result.hasWriteErrors()) {
                                         var writeErrors = result.getWriteErrors(), ins;
@@ -377,14 +389,18 @@ var SyncManager = {
                         }
                         
                         handleUpdates(updates) {
-                            if (!updates.length) return Promise.resolve();
+                            if (!updates.length || this.updateLocked) return Promise.resolve();
                             return new Promise ( (resolve,reject)=> {
                                 //console.time("updates");
                                 this.lockUpdate();
                                 if (DebugMode) console.log ("Handling "+updates.length+" updates...");
                                 this.collection.bulkWrite(updates).then(
                                     res=> {
+                                        // We clone the updates here, overwriting the same variable - 
+                                        // so we can unlock and return, freeing the engine to handle more updates
+                                        updates = clone(updates);
                                         //console.timeEnd("updates");
+                                        this.unlockUpdate();
                                         resolve();
 
                                         // update operation example:
@@ -453,56 +469,71 @@ var SyncManager = {
                             });
                         }
 
+                        sortUpdates() {
+                            return new Promise ((resolve,reject)=> {
+                                var updates = [], xupdates = [];
+                                var u, id;
+                                for (let i=0,len=this.BULK.updates.length;i<len;i++) {
+                                    u = this.BULK.updates[i];
+                                    id = u.updateOne._id;
+                                    if (id in this.BULK.inserts) {
+                                        xupdates.push (u);
+                                    }
+                                    else {
+                                        updates.push (u);
+                                    }
+                                }
+                                resolve([updates, xupdates]);
+                            });
 
-                        sync() {
+                        }
+
+                        hasOperations() {
+                            return (
+                                Object.keys(this.BULK.inserts).length ||
+                                this.BULK.updates.length
+                            )
+                        }
+
+                        async sync() {
+                            // If no operations in queue - set PENDING to false
+                            if (!this.hasOperations()) this.PENDING = false;
+
                             if (this.PENDING) {
                                 if (DebugMode) {
-                                    console.log ("Sync for "+this.collection+" canceled. Previous sync already pending");
+                                    console.log ("Sync for "+this.collectionName+" canceled. Previous sync already pending");
                                     console.log (Object.keys(this.BULK.inserts).length+" inserts pending. "+this.BULK.updates.length+" updates pending.");
                                 }
                                 return;
                             }
 
                             this.PENDING = true;
-
-                            var updates  = [],
-                                // eXclusive updates - updates dependant on inserts (should only run after insterts are done)
-                                xupdates = [];
-
-                            var u, id;
-                            for (var i=0,len=this.BULK.updates.length;i<len;i++) {
-                                u = this.BULK.updates[i];
-                                id = u.updateOne._id;
-                                if (id in this.BULK.inserts) {
-                                    xupdates.push (u);
-                                }
-                                else {
-                                    updates.push (u);
-                                }
-                            }
-
+                            var handlePromises = [];
                             var syncer = this;
-                            if (updates.length) {
-                                if (DebugMode) console.log (syncer.collectionName+": running "+updates.length+" updates...");
+                            var hasXUpdates = false;
+
+                            if (this.BULK.updates.length) {
+                                var updates  = [],
+                                    // eXclusive updates - updates dependant on inserts (should only run after insterts are done)
+                                    xupdates = [];
+                                [ updates, xupdates ] = await this.sortUpdates();
+                                handlePromises.push(syncer.handleUpdates (updates));
+                                hasXUpdates = true;
                             }
 
-                            syncer.handleUpdates (updates);
                             if (Object.keys(this.BULK.inserts).length) {
-                                if (DebugMode) console.log (syncer.collectionName+": running "+Object.keys(this.BULK.inserts).length+" inserts...");
+                                handlePromises.push(
+                                    syncer.handleInserts()
+                                    .then(function() { 
+                                        if (hasXUpdates) return syncer.handleUpdates(xupdates);
+                                    })
+                                );
                             }
-                            syncer.handleInserts()
-                            .then(function() { 
-                                if (xupdates.length) {
-                                    if (DebugMode) console.log (syncer.collectionName+": running "+xupdates.length+" xupdates...");
-                                }
-                                return syncer.handleUpdates(xupdates);
-                            })
-                            .then(function() {
-                                syncer.PENDING = false; 
-                            });
+
+                            await Promise.all(handlePromises);
+                            syncer.PENDING = false;                                 
                         }
                     }
-
                     resolve(SyncerClass);
                 },
                 err=> {
