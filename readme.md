@@ -23,12 +23,12 @@ and running bulk operations in fixed (settable) intervals. The background engine
     + [Built-in methods: callbacks and hooks](#built-in-methods-callbacks-and-hooks)
       - [new Model instance lifecycle](#new-model-instance-lifecycle)
       - [Database persistence callbacks](#database-persistence-callbacks)
-        + [`_inserted()`](#inserted)
+        + [`_inserted()`](#_inserted)
 	+ [Defining DB-persistence callbacks for specific instances](#defining-DB-persistence-callbacks-for-specific-instances)
 	  - [Setting a callback function to a meta property](setting-a-callback-function-to-a-meta-property)
           - [Using events](#using-events)
-	+ [`isDuplicate()`](#isDuplicate)
-	+ [`error(msg)`](#error)
+	+ [`_isDuplicate()`](#_isDuplicate)
+	+ [`_error(msg)`](#_error)
         + [Listening for updates on the database](#listening-for-updates-on-the-database)
           - [`$onUpdate`](#$onUpdate)
       - [Listening for local changes](#listening-for-local-changes)
@@ -38,11 +38,16 @@ and running bulk operations in fixed (settable) intervals. The background engine
     + [The `remodel` method](#the-remodel-method)
   * [Going further - extending and deriving models](#going-further-extending-and-deriving-models)
   * [Retrieving data from a database](#retrieving-data-from-a-database)
+    + [`get`](#get)
+    + [`getAll`](#getAll)
+    + [`map`](#map)
+    + [`has`)(#has)
+    + [`count`)(#count)
     + [`MainIndex`](#mainindex)
-      - [`mainIndex()`](#mainindex)
-    + [`which` argument](#-which-argument)
-    + [map](#map)
-    + [A word of caution for when using the `get` functions:](#a-word-of-caution-for-when-using-the-get-functions-)
+      - [`mainIndex() method`](#mainindex-method)
+    + [`which` argument](#which-argument)
+    + [map - additional information](#map-additional-information)
+    + [A word of caution for when using the `get` functions](#a-word-of-caution-for-when-using-the-get-functions)
     + [`$DefaultCriteria`](#-defaultcriteria)
   * [Using model instances as values in other models](#using-model-instances-as-values-in-other-models)
   * [Indexes and how they are handled in the Mongo server](#indexes-and-how-they-are-handled-in-the-mongo-server)
@@ -593,8 +598,8 @@ Its value will be determined according to the following:
 * If no unique index is defined, then the first **non-unique** will be determined as the MainIndex. <br>
 * If no index is defined in the model, the **`_id`** property will be determined as the MainIndex.
 
-#### `mainIndex()`
-You can use the static `mainIndex` method to get the name of the main index, as a string. This can be useful, for example, when overriding any of the (callback methods)[##database-persistence-callbacks], e.g.:
+#### `mainIndex() method`
+You can use the static `mainIndex` method to get the name of the main index, as a string. This can be useful, for example, when overriding any of the (callback methods)[#database-persistence-callbacks], e.g.:
 
 ```javascript
 const Spaceship = Model({
@@ -646,7 +651,7 @@ Get all "`_TYPE C`" spaceships into an array:
 var spaceships = await Spaceship.getAll({_TYPE:"C"});
 ```
 
-### map
+### map - additional information
 The `map` method has additional two optional arguments (other than the first `which`): `index`: to specify a different index to be used as the key
 for mapping the objects (other than `MainIndex`), and `returnArray`: a boolean specifying if to return the result as an "associative array" of object instances mapped to key indexes or as an object with object instances mapped to index keys.
 
