@@ -6,6 +6,48 @@
 It wraps your data classes and objects with [Javascript Proxies](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy), "tapping-in" to native operations such as creating instances (using the normal `new` operator), and updating property values (using the normal assignment operator `=`), and then handling passing database calls to the database in the background, while leveraging MongoDB's bulk operations capabilities in a smart way, to save unnecessary calls to the db engine,
 and running bulk operations in fixed (settable) intervals. The background engine is mostly handled transparently by a module called `SyncManager`.
 
+## Table of Contents
+  * [Introduction](#introduction)
+    + [The rationale behind DeriveJS, using an analogy](#the-rationale-behind-derivejs--using-an-analogy)
+    + [Comparison to Mongoose](#comparison-to-mongoose)
+    + [Reference](#reference)
+  * [How to use](#how-to-use)
+        * [Define a data model:](#define-a-data-model-)
+        * [Create an instance](#create-an-instance)
+        * [Manipulate properties](#manipulate-properties)
+        * [Call instance functions:](#call-instance-functions-)
+  * [Getting Started](#getting-started)
+    + [Defining a Data Model](#defining-a-data-model)
+  * [Going deeper](#going-deeper)
+    + [Modifiers](#modifiers)
+    + [Built-in methods: callbacks and hooks](#built-in-methods--callbacks-and-hooks)
+      - [new Model instance lifecycle](#new-model-instance-lifecycle)
+      - [Database persistence callbacks](#database-persistence-callbacks)
+      - [Listening for local changes](#listening-for-local-changes)
+      - [Listening for updates on the database](#listening-for-updates-on-the-database)
+    + [Unique indexes](#unique-indexes)
+    + [The `remodel` method](#the--remodel--method)
+  * [Going further - extending and deriving models](#going-further---extending-and-deriving-models)
+  * [Getting/restoring/retrieving objects from the Database](#getting-restoring-retrieving-objects-from-the-database)
+    + [`MainIndex`](#-mainindex-)
+    + [`which` argument](#-which--argument)
+- [map](#map)
+      - [A word of caution for when using the `get` functions:](#a-word-of-caution-for-when-using-the--get--functions-)
+    + [`$DefaultCriteria`](#--defaultcriteria-)
+  * [Using model instances as values in other models](#using-model-instances-as-values-in-other-models)
+  * [Indexes and how they are handled in the Mongo server](#indexes-and-how-they-are-handled-in-the-mongo-server)
+  * [Putting it all together:](#putting-it-all-together-)
+    + [Defining our models](#defining-our-models)
+    + [Writing our app](#writing-our-app)
+  * [Advanced subjects](#advanced-subjects)
+    + [Join](#join)
+      - [An example use case:](#an-example-use-case-)
+    + [`joinAll`](#-joinall-)
+    + [Access the "raw" mongoDB collection object](#access-the--raw--mongodb-collection-object)
+    + [Mixins](#mixins)
+    + [`collectionReady()` (new in version 1.4.0+)](#-collectionready-----new-in-version-140--)
+
+
 ### The rationale behind DeriveJS, using an analogy
 If you are familiar with a front-end UI framework such as ReactJS, you know that whenever a change is made to the `state` object - React will automatically know to issue a re-render of the component - this is called a "pull" methodology, where as in other similar frameworks, you might need to explicitly call a `render()` method (this is a "push" methodology, in that context).
 In a similar analogy to the way React works - when using Derive - you are **not required** to call an explicit `save()` method to have your data be saved and persisted on a db - it's enough that you make some change to an exisiting data object, or create a new one - and Derive will already know to handle that data's persistence.
