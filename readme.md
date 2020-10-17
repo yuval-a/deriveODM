@@ -12,10 +12,10 @@ and running bulk operations in fixed (settable) intervals. The background engine
     + [Comparison to Mongoose](#comparison-to-mongoose)
     + [Reference](#reference)
   * [How to use](#how-to-use)
-    * [Define a data model:](#define-a-data-model)
+    * [Define a data model](#define-a-data-model)
     * [Create an instance](#create-an-instance)
     * [Manipulate properties](#manipulate-properties)
-    * [Call instance functions:](#call-instance-functions)
+    * [Call instance functions](#call-instance-functions)
   * [Getting Started](#getting-started)
     + [Defining a Data Model](#defining-a-data-model)
   * [Going deeper](#going-deeper)
@@ -23,16 +23,26 @@ and running bulk operations in fixed (settable) intervals. The background engine
     + [Built-in methods: callbacks and hooks](#built-in-methods-callbacks-and-hooks)
       - [new Model instance lifecycle](#new-model-instance-lifecycle)
       - [Database persistence callbacks](#database-persistence-callbacks)
+        + [`_inserted()`](#inserted)
+	+ [Defining DB-persistence callbacks for specific instances](#defining-DB-persistence-callbacks-for-specific-instances)
+	  - [Setting a callback function to a meta property](setting-a-callback-function-to-a-meta-property)
+          - [Using events](#using-events)
+	+ [`isDuplicate()`](#isDuplicate)
+	+ [`error(msg)`](#error)
+        + [Listening for updates on the database](#listening-for-updates-on-the-database)
+          - [`$onUpdate`](#$onUpdate)
       - [Listening for local changes](#listening-for-local-changes)
-      - [Listening for updates on the database](#listening-for-updates-on-the-database)
+        + [`changed`](#changed)
+	  -[`$Listen`](#$Listen)
     + [Unique indexes](#unique-indexes)
     + [The `remodel` method](#the-remodel-method)
-  * [Going further - extending and deriving models](#going-further---extending-and-deriving-models)
+  * [Going further - extending and deriving models](#going-further-extending-and-deriving-models)
   * [Retrieving data from a database](#retrieving-data-from-a-database)
     + [`MainIndex`](#mainindex)
-    + [`which` argument](#-which--argument)
+      - [`mainIndex()`](#mainindex)
+    + [`which` argument](#-which-argument)
     + [map](#map)
-      - [A word of caution for when using the `get` functions:](#a-word-of-caution-for-when-using-the-get-functions-)
+    + [A word of caution for when using the `get` functions:](#a-word-of-caution-for-when-using-the-get-functions-)
     + [`$DefaultCriteria`](#-defaultcriteria)
   * [Using model instances as values in other models](#using-model-instances-as-values-in-other-models)
   * [Indexes and how they are handled in the Mongo server](#indexes-and-how-they-are-handled-in-the-mongo-server)
@@ -63,7 +73,7 @@ For a complete reference of all available methods, functions and objects availab
 ## How to use
 It only takes a few easy steps:
 
-##### Define a data model:
+##### Define a data model
 ```javascript
     var User = Model({
         _email$: "",
@@ -284,7 +294,7 @@ will yield:
 ##### Defining DB-persistence callbacks for specific instances
 If you want to implement specific callbacks for **specific instances**, you have several ways to achieve this:
 
-###### Set a callback function to a meta property, passed as an argument to the constructor, and call it from within the built-in `_inserted`  
+###### Setting a callback function to a meta property
 You can define a meta property on the model, to hold a callback function.
 
 ```javascript
@@ -318,7 +328,7 @@ var ship = new Ship("shipA","", function() {
 
 Note how when overriding a constructor in a child class - you need to specify the indexes as arguments before adding new ones, and of-course, you need to call the parent constructor via `super`.
 
-###### Use events
+###### Using events
 Another option is to use an [`EventEmitter`](https://nodejs.org/api/events.html) as a meta value:
 
 ```javascript
@@ -349,10 +359,12 @@ ship.$events.on("created",function() {
 });
 ```
 
-* `_isDuplicate()`:  Called when the MongoDB server yields a "duplicate key value" error, and contains by default:
+##### `_isDuplicate()`
+Called when the MongoDB server yields a "duplicate key value" error, and contains by default: <br>
 `console.log (this[MainIndex]+" has a duplicate key value!");`
 
-* `_error(msg)` : Called whenever there is a data-related error for this object, and contains by default:
+##### `_error(msg)`
+Called whenever there is a data-related error for this object, and contains by default: <br>
 `console.log ("Error in "+this[MainIndex]+": "+msg);`
 
 ##### Listening for updates on the database
@@ -383,11 +395,12 @@ Also note, that `$onUpdate` **doesn't** actually set the value on `property` - y
 The fourth built-in method can be used when you want to listen for value-changes on certain properties of your object,
 (**Note**: this will trigger on *local* changes to the properties, regardless to their state in the equavilent documents in the database collection)
 
-* `changed(property, newValue, oldValue)`
-
-To register a property for the listener, put its name (as a string) inside an array defined as the `$Listen` meta-property (e.g. `$Listen: [ "property" ,"otherproperty", "objectprop.prop"]`.
-The `changed` method contains this code by default:
+###### `changed(property, newValue, oldValue)`
+The `changed` method contains this code by default: <br>
 `console.log (this[MainIndex]+":",property,"changed from",oldValue,"to",newValue);`
+
+####### `$Listen`
+To register a property for the listener, put its name (as a string) inside an array defined as the `$Listen` meta-property (e.g. `$Listen: [ "property" ,"otherproperty", "objectprop.prop"]`.
 
 ### Unique indexes
 Now, we decide that we want the `_name` property index to be unique:
@@ -549,15 +562,26 @@ Each Model class have various different static methods used to achieve this;
 most of these are wrappers around certain Mongo `find` queries, which will make the process easier and more intuitive.
 
 There are 4 methods that can be used to retrieve data from the database, here is a brief explanation for each:
-* `get` returns **one** object instance.
-* `getAll` returns **all** (with an optional filter query) object instances (in an array). There are 3 more additional optional arguments:
-`sortBy` - to specify a different index to sort by, using an object such as `{<indexName>: <-1 or 1>}` - use `-1` for descending order, and `1` for ascending (the default is `{MainIndex:-1}`), `limit` - to limit the number of returned results (default is `0`, which is unlimited), `skip` to specify an offset index for retrieved results (default is `0`).
-* `map` returns **all** (with an optional filter query) object instances mapped by an index as an object, or as an array 
-(according to the third boolean argument `returnArray`). The second argument `index` lets you set the index name that will be used for
-the mapping (set as null to use the default MainIndex). The 4th and 5th arguments are `limit` and `skip` that allows you to get only some of
-the documents.
-* `has` returns a boolean indicating if the database contains certain value(s).
-* `count` returns the total number of documents in the DB collection.
+
+### `get(which)` 
+Returns **one** object instance.
+
+### `getAll(which, sortBy, limit=0, skip=0)` 
+Returns **all** (with an optional filter query) object instances (in an array). There are 3 more additional optional arguments:
+* `sortBy` - to specify a different index to sort by, using an object such as `{<indexName>: <-1 or 1>}` - use `-1` for descending order, and `1` for ascending (the default is `{MainIndex:-1}`).
+* `limit` - to limit the number of returned results (default is `0`, which is unlimited). 
+* `skip` to specify an offset index for retrieved results (default is `0`).
+
+### `map(which, index, returnArray, limit=0, skip=0)` 
+`map` returns **all** (with an optional filter query) object instances mapped by an index as an object, or as an array (according to the third boolean argument `returnArray`). The second argument `index` lets you set the index name that will be used for the mapping (set as null to use the default `MainIndex`). 
+The 4th and 5th arguments are `limit` and `skip` that allows you to get only some of the documents.
+
+### `has(which, returnDocument)` 
+Returns a boolean indicating if the database contains certain value(s). The second `returnDocument` is a boolean - if the document exist and this argument is set to `true` -
+the document will also be returned (as a Derive data object), otherwise `false` will be returned (regardless of the value of `returnDocument`).
+
+### `count(which)` 
+Returns the total number of documents in the DB collection.
 
 All of these methods can use a [`which`](#which-argument) argument, and to understand how to use it, you need to know about `MainIndex`:
 
@@ -622,8 +646,8 @@ Get all "`_TYPE C`" spaceships into an array:
 var spaceships = await Spaceship.getAll({_TYPE:"C"});
 ```
 
-# map
-`map` has additional two optional arguments (other than the first `which`): `index`: to specify a different index to be used as the key
+### map
+The `map` method has additional two optional arguments (other than the first `which`): `index`: to specify a different index to be used as the key
 for mapping the objects (other than `MainIndex`), and `returnArray`: a boolean specifying if to return the result as an "associative array" of object instances mapped to key indexes or as an object with object instances mapped to index keys.
 
 ```javascript
@@ -661,7 +685,7 @@ Will return `true` if a Spaceship object with its `_name` set to "`The Beyond`" 
 The method also have a second argument - `returnDocument`, a boolean that if set to `true` will also return the object if it exist on the db 
 (or `false` if it doesn't).
 
-#### A word of caution for when using the `get` functions: ####
+#### A word of caution for when using the `get` functions
 Upon retrieving the objects from the database - their `constructor` functions **will** be called for each object.
 Therefore - if you override the constructor and have any code that affects or changes the data there - it **will** run - that is usually *not* desired when retrieving data object, so you should make sure you call the `get` functions from a (usually "higher") class that runs a constructor that does not change the data (like the default constructor).
 
