@@ -28,7 +28,7 @@ and running bulk operations in fixed (settable) intervals. The background engine
     + [Unique indexes](#unique-indexes)
     + [The `remodel` method](#the--remodel--method)
   * [Going further - extending and deriving models](#going-further---extending-and-deriving-models)
-  * [Getting/restoring/retrieving objects from the Database](#getting-restoring-retrieving-objects-from-the-database)
+  * [Retrieving data from a database](#retrieving-data-from-a-database)
     + [`MainIndex`](#-mainindex-)
     + [`which` argument](#-which--argument)
 - [map](#map)
@@ -541,8 +541,9 @@ are always defined with the `sparse:true` property on the Mongo DB.
 You can read more about indexes and how they are managed in deriveJS [here](#indexes-and-how-they-are-handled-in-the-Mongo-server)
 
 
-## Getting/restoring/retrieving objects from the Database
-You will often want to "restore" existing database objects and populate your local ones with the persisted data. Each Model class have various different static methods used to achieve this; 
+## Retrieving data from a database
+You will often want to "restore" existing database objects from data collections and populate your local ones with the persisted data. 
+Each Model class have various different static methods used to achieve this; 
 most of these are wrappers around certain Mongo `find` queries, which will make the process easier and more intuitive.
 
 There are 4 methods that can be used to retrieve data from the database, here is a brief explanation for each:
