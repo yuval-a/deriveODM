@@ -560,10 +560,24 @@ the documents.
 All of these methods can use a [`which`](#which-argument) argument, and to understand how to use it, you need to know about `MainIndex`:
 
 ###  `MainIndex`
-`MainIndex` is an internal value that each model class has and is determined during its definition process. The `MainIndex` will contain the "most important" index for that class/collection.  <br>
-Its value will be the first **unique** index defined on the model. <br>
-If no unique index is defined, then it will be the first non-unique index defined. <br>
-If no index is defined, then it will be the `_id`.
+`MainIndex` is an internal value that each model class has and is determined during its definition process. <br>
+The `MainIndex` will contain the "most important" index for that class/collection.  <br>
+Its value will be determined according to the following:
+* If there is at least one **unique** index - the first unique index defined on the model will be determined as the MainIndex. <br>
+* If no unique index is defined, then the first **non-unique** will be determined as the MainIndex. <br>
+* If no index is defined in the model, the **`_id`** property will be determined as the MainIndex.
+
+#### `mainIndex()`
+You can use the static `mainIndex` method to get the name of the main index, as a string. This can be useful, for example, when overriding any of the (callback methods)[##database-persistence-callbacks], e.g.:
+
+```javascript
+const Spaceship = Model({
+	_name: "",
+	_TYPE: "",
+	_inserted() {
+	   console.log ("Mention the value of this instance's main index: " + this[Spaceship.mainIndex()]);
+	}
+```
 
 ### `which` argument
 When you use the `which` argument, you have two options - 
