@@ -290,6 +290,8 @@ To sort in an ascending order, use `1`nas the value.
 If set to true, then the function will return an instance of the model (as in when using the get function) - 
 see notes about this in the documentation for join, and why you should almost never need to set this to true.
 
+#### `mainIndex()`
+Returns the data class' [`MainIndex`](https://github.com/yuval-a/derivejs/blob/master/readme.md#mainindex)
 
 ## Instance methods
 These are methods that are available by default to each data object instance, and can also be overriden by extending the Model class.
