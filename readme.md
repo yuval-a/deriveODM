@@ -163,7 +163,7 @@ derive.Model
 );
 ```
 ### Defining a Data Model
-Once inside the resolved promise, you can use the `Model` function to define a "Data Model", by passing an object literal as an argument, describing the data properties and their default values (as well as some instance methods, when needed). The `Model` function returns a **`class`** "representing" that data model, and its functionality. (as mentioned, that class is a special "proxied" class that comes with some
+Once the promise resolves successfully, you have access to the `Model` function, which can be used to define a "Data Model", by passing an object literal as an argument, describing the data properties and their default values (as well as some instance methods, when needed). The `Model` function returns a **`class`** "representing" that data model, and its functionality. (as mentioned, that class is a special "proxied" class that comes with some
 built-in stuff in it, to handle database persistence, and offer some static and default instance methods which will be described below).
 
 Let's create a data model to represent a "spaceship":
