@@ -80,36 +80,36 @@ It only takes a few easy steps:
 
 ##### Define a data model
 ```javascript
-    var User = Model({
-        _email$: "",
-        _name: "",
-        age: null,
-        password: null,
-        setPassword(pass) {
-            // hash the plain-text password ("hashit" is just an example function for your preffered hashing function)
-            var passwordHash = hashit(pass);
-            this.password = passwordHash;
-        }
-    },"User");
+var User = Model({
+    _email$: "",
+    _name: "",
+    age: null,
+    password: null,
+    setPassword(pass) {
+        // hash the plain-text password ("hashit" is just an example function for your preffered hashing function)
+        var passwordHash = hashit(pass);
+        this.password = passwordHash;
+    }
+},"User");
 ```
 The first time you define it, a `Users` collection is defined on the database, with an `_email` unique index and a `_name` index (you can also alter the properties, change indexes later).
 
 ##### Create an instance
 ```javascript
-    var user = new User ("someemail@mail.com","Someone Somebody");
+var user = new User ("someemail@mail.com","Someone Somebody");
 ```
 There will now be a new document in the `Users` collection, having "`someemail@mail.com`" as the `_email` and "`Someone Somebody`" as the `_name`.
 
 ##### Manipulate properties 
 ```javascript
-    user.age = 30;
+user.age = 30;
 ```
 
 The document will now have the value `30` set to its `age` property.
 
 ##### Call instance functions:
 ```javascript
-    user.setPassword("plaintextpassword");
+user.setPassword("plaintextpassword");
 ```
 
 And so on...
