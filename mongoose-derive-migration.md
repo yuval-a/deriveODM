@@ -59,7 +59,7 @@ In Derive, you can define static methods by simply defining them on a subclass o
 ```javascript
    const Animal = class extends Model({ name:"", type:"" }, "Animal") {
         static findByName(name) {
-            return this.get({ name: new RegExp(name, 'i') });
+            return Animal.get({ name: new RegExp(name, 'i') });
         }
     }
 
@@ -91,8 +91,7 @@ In Derive you use the special modifier character - the dollar sign ('$') at the 
         name: { first: "", last: "" },
         // will contain full name
         $fullName: "",
-        //fullName() { return this.name.first + ' ' + this.name.last; }
-    }, "Person") {
+   }, "Person") {
         
         constructor() {
             super();
