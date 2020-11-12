@@ -1,7 +1,7 @@
 # Version Log
 ## [1.6.1](https://github.com/yuval-a/derivejs/releases/tag/1.6.1)
 * Switched back to `lodash.deepclone` as others were buggy.
-* Added `Connect` alias
+* Added `Connect` alias.
 
 ## [1.5.0](https://github.com/yuval-a/derivejs/releases/tag/1.5.0)
 * Switched to [`fast-clone`](https://www.npmjs.com/package/fast-clone) package instead of the slower `clone`.
