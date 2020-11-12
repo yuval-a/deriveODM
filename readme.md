@@ -163,6 +163,9 @@ derive.Model
     }
 );
 ```
+
+New: starting with version 1.6.0 you may use the `Connect` module function (`derive.Connect`) instead of `Model` (`derive.Model`), which is exactly the same as `Model`, and is used as an alias (both reference the same module) - and was added to avoid confusion between the resolved `Model` function (the function you use to define data models) and the **module** `Model` function (the function which is used to connect to the database and resolve with the `Model` function).
+
 ### Defining a Data Model
 Once the promise resolves successfully, you have access to the `Model` function, which can be used to define a "Data Model", by passing an object literal as an argument, describing the data properties and their default values (as well as some instance methods, when needed). The `Model` function returns a **`class`** "representing" that data model, and its functionality (as mentioned, that class is a special "proxied" class that comes with some built-in stuff in it, to handle database persistence, and offer some static and default instance methods which will be described below).
 
