@@ -1,5 +1,5 @@
 const SyncManager = require('./SyncManager');
-const clone = require('fast-clone');
+const clone = require('lodash.clonedeep');
 const DBRef = require('mongodb').DBRef;
 
 

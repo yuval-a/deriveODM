@@ -1,4 +1,4 @@
-const clone = require('fast-clone');
+const clone = require('lodash.clonedeep');
 const MongoClient = require('mongodb').MongoClient,
       ModelMapper = require('./MongoModelMapper'),
       EventEmitter = require('events');

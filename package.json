@@ -31,8 +31,8 @@
   },
   "bundleDependencies": false,
   "dependencies": {
-    "fast-clone": "^1.5.13",
-    "mongodb": "^3.5.5"
+    "lodash.clonedeep": "^4.5.0",
+    "mongodb": "^3.6.3"
   },
   "deprecated": false,
   "description": "A DRY Object Data Mapper framework, that handles database persistence transparently in the background.",
