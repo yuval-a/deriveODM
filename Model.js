@@ -74,7 +74,7 @@ module.exports = function(options) {
                                 return Reflect.set(target,property,value,receiver);
                             }
                         },
-                        allowedGet: [ 'inspect', 'toBSON', 'toJSON', '_bsontype', 'then', '_created' ],
+                        allowedGet: [ 'inspect', 'toBSON', 'toJSON', '_bsontype', 'then', '_created', 'length' ],
                         get: function(target, property, receiver) {
                             //console.log ("get: ",property," called on ",target);
                             if (typeof property === "symbol" || this.allowedGet.indexOf(property)>-1 || property.indexOf('$')===0)
