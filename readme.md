@@ -6,7 +6,7 @@ It wraps your data classes and objects with [Javascript Proxies](https://develop
 and running bulk operations in fixed (settable) intervals. The background engine is mostly handled transparently by a module called `SyncManager`.
 
 **Note**: this is a complete technical reference, if you'd like to read a less verbose introduction, you can read [this article on Hashnode](https://yuval.hashnode.dev/derivejs-a-reactive-odm-object-data-mapper-framework-for-mongodb-and-nodejs-ckfspl31f02ryv6s1asqy6wvh)
-*
+
 ## Table of Contents
   * [Introduction](#introduction)
     + [The rationale behind DeriveJS, using an analogy](#the-rationale-behind-derivejs-using-an-analogy)
