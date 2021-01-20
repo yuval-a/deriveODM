@@ -149,7 +149,7 @@ In Derive ou can use the `clear()` static method with a query to delete document
 
 ### Updating
 To update a data object instance, you use the normal assignment operator (`=`). E.g.:
-`person.name = "Jean Luc Ricard"` . Derive will also make sure that the property in the equalivent document will be updated in the DB.
+`person.name = "Jean Luc Ricard"` . Derive will also make sure that the property in the equavilent document will be updated in the DB.
 
 ### Validating
 There is no explicit validation mechanism in Derive, but it can be achieved in several ways:
