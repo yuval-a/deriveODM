@@ -217,10 +217,12 @@ thebeyond.addCrew(ricard);
 
 ### Resolving DBRefs ("subdocuments")
 In Derive you can use the `get` function to resolve, or dereference a DBRef. Continuing the previous example:
+```javascript
 var thebeyond = await Spaceship.get("The Beyond");
 var ricard    = await thebeyond.crew[0];
+```
 
 ### Mixins (Plugins).
-Derive enables the creation of "mixins", via the built-in `use` function, which you can pass an object literal with functions in it - and those functions 
+Derive enables the creation of "mixins", via the built-in `use` function, which you can pass an object literal with functions to it - and those functions 
 will be available to all model instances of that data class. See [the documentation](https://www.npmjs.com/package/derivejs#mixins) for more details.
 
