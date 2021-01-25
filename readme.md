@@ -1131,7 +1131,7 @@ new Promise(async (resolve, reject)=> {
 });
 ```
 
-Then we can implement the `log` function, for example on a `Spaceship` model:
+Then we can call the `log` function, for example on a `Spaceship` model:
 
 ```javascript        
     var Spaceship = Model({
