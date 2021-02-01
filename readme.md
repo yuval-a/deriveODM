@@ -30,7 +30,7 @@ and running bulk operations in fixed (settable) intervals. The background engine
         + [`_error(msg)`](#_errormsg)
       - [Database Persistence Events (`$_dbEvents`)](#database-persistence-events-_dbevents)
           - [`inserted` Event](#inserted-event)
-	  - [`updated` Event](#updated-event)
+          - [`updated` Event](#updated-event)
           - [Setting a callback function to a meta property](#setting-a-callback-function-to-a-meta-property)
         + [Listening for updates on the database](#listening-for-updates-on-the-database)
           - [`$onUpdate`](#onupdate)
