@@ -385,7 +385,7 @@ The pevious, old, value of the property.
 This function is not defined by default on a data object instance - but you can define it yourself - if you do, it will trigger whenever a data object is created (locally), 
 and **before** an equivalent document is inserted to the DB.
 
-## Database Persistence Events (`$_dbEvents`)
+## Instance Events (`$_dbEvents`)
 Each Derive data object has a built-in `$_dbEvents` meta property, which is an `EventEmitter` object, that you can use to listen for DB persistence events and changes, 
 by calling the `on` or `once` methods to listen for events in specific instances, and attach handler functions (see [Node Events documentation](https://nodejs.org/api/events.html) for more information about `EventEmitter`).
 
