@@ -331,13 +331,14 @@ These are the events available via `$_dbEvents`:
 Called once a MongoDB document for this instance was inserted to the DB collection. The callback function receives two arguments:
 ####### `id` 
 The `_id` of the inserted document.
-####### `insertedObject` 
+###### `insertedObject` 
 This is the same relevant Derive data object instance that was created.
-####### Example
+###### Example
 ```javascript
 (new PhotonTorpedos()).$_dbEvents.once("inserted", (id, torpedos)=> {
     // `torpedos` is the PhotonTorpedos instance.
 });
+```
 ###### `updated` Event 
 Called once a MongoDB document's property is updated on the db. The callback function receives three arguments:
 ####### `id` 
