@@ -28,6 +28,7 @@ This document is a reference, describing all methods and functions available whe
     + [`_isDuplicate`](#_isduplicate)
     + [`changed`](#changedproperty-newvalue-oldvalue)
     + [Assignment with `$callback` Syntax (Update Callbacks)](#assignment-with-callback-syntax-update-callbacks)
+    + [`_created`](#_created)
   * [Instance Events (`$_dbEvents`)](#instance-events-_dbevents)
     + [`inserted` Event](#inserted-event)
     + [`updated` Event](#updated-event)
@@ -354,13 +355,15 @@ The actual value you want to assign.
 #### `$callback`
 A function that will be called once the property of the equalivent document in the DB is actually updated.
 
-Example:
+#### Example
+```javascript
 Feisty.captain = {
     $value: Wort,
     $callback: ()=> {
         console.log ("Wort was updated as the captain of the Feisty");
     }
 }
+```
 
 The value of `$value` will be assigned to the property, and the function in `$callback` will be called once that property is updated with that value on the DB.
 
@@ -381,6 +384,39 @@ The pevious, old, value of the property.
 ### `_created()`
 This function is not defined by default on a data object instance - but you can define it yourself - if you do, it will trigger whenever a data object is created (locally), 
 and **before** an equivalent document is inserted to the DB.
+
+## Database Persistence Events (`$_dbEvents`)
+Each Derive data object has a built-in `$_dbEvents` meta property, which is an `EventEmitter` object, that you can use to listen for DB persistence events and changes, 
+by calling the `on` or `once` methods to listen for events in specific instances, and attach handler functions (see [Node Events documentation](https://nodejs.org/api/events.html) for more information about `EventEmitter`).
+
+These are the events available via `$_dbEvents`:
+### `inserted` Event
+Called once a MongoDB document for this instance was inserted to the DB collection. The callback function receives two arguments:
+#### `id` 
+The `_id` of the inserted document.
+#### `insertedObject` 
+This is the same relevant Derive data object instance that was created.
+#### Example
+```javascript
+(new PhotonTorpedos()).$_dbEvents.once("inserted", (id, torpedos)=> {
+    // `torpedos` is the PhotonTorpedos instance.
+});
+```
+### `updated` Event 
+Called once a MongoDB document's property is updated on the db. The callback function receives three arguments:
+#### `id` 
+The `_id` of the updated document.
+#### `updatedFields`
+An object where the keys are updated property names, and the values are the new updated values.
+#### `updatedDocument` 
+The Derive object instance.
+#### Example
+```javascript
+BoldlyGo.$_dbEvents.on("updated", (id, updatedFields)=> {
+    console.log ("BoldlyGo updated properties: ");
+    console.dir (updatedFields, {depth:null});
+});
+```    
 
 ## Other data model related options
 
