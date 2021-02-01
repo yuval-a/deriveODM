@@ -9,25 +9,24 @@ and running bulk operations in fixed (settable) intervals. The background engine
 
 ## Table of Contents
   * [Introduction](#introduction)
-    + [The rationale behind DeriveJS, using an analogy](#the-rationale-behind-derivejs-using-an-analogy)
+    + [The Rationale Behind DeriveJS, Using an Analogy](#the-rationale-behind-derivejs-using-an-analogy)
     + [Comparison to Mongoose](#comparison-to-mongoose)
     + [Reference](#reference)
-  * [How to use](#how-to-use)
-    * [Define a data model](#define-a-data-model)
-    * [Create an instance](#create-an-instance)
-    * [Manipulate properties](#manipulate-properties)
-    * [Call instance functions](#call-instance-functions)
+  * [How to Use](#how-to-use)
+    * [Define a Data Model](#define-a-data-model)
+    * [Create an Instance](#create-an-instance)
+    * [Manipulate Properties](#manipulate-properties)
+    * [Call Instance Functions](#call-instance-functions)
   * [Getting Started](#getting-started)
     + [Defining a Data Model](#defining-a-data-model)
   * [Going deeper](#going-deeper)
     + [Modifiers](#modifiers)
-    + [Built-in methods: callbacks and hooks](#built-in-methods-callbacks-and-hooks)
-      - [new Model instance lifecycle](#new-model-instance-lifecycle)
-      - [Database persistence callbacks](#database-persistence-callbacks)
+    + [Built-in Methods: Callbacks and Hooks](#built-in-methods-callbacks-and-hooks)
+      - [New Model Instance Lifecycle](#new-model-instance-lifecycle)
+      - [Database Persistence Callbacks](#database-persistence-callbacks)
         + [`_inserted()`](#_inserted)
-        + [Defining DB-persistence callbacks for specific instances](#defining-DB-persistence-callbacks-for-specific-instances)
-          - [$_inserted](#$_inserted)
-          - [$_updated](#$_updated)
+        + ["Assignment with`$callback`" Syntax](#assignment-with-callback-syntax)
+      - [Database Persistence Events (`$_dbEvents`)](#database-persistence-events-dbevents)
           - [Setting a callback function to a meta property](#setting-a-callback-function-to-a-meta-property)
           - [Using events](#using-events)
         + [`_isDuplicate()`](#_isDuplicate)
@@ -66,7 +65,7 @@ and running bulk operations in fixed (settable) intervals. The background engine
     + [`collectionReady()` (new in version 1.4.0+)](#-collectionready-new-in-version-140)
 
 
-### The rationale behind DeriveJS, using an analogy
+### The Rationale Behind DeriveJS, Using an Analogy
 If you are familiar with a front-end UI framework such as ReactJS, you know that whenever a change is made to the `state` object - React will automatically know to issue a re-render of the component - this is known as a "pull" methodology, where as in other similar frameworks, you might need to explicitly call a `render()` method (this is a "push" methodology, in that context).
 In a similar analogy to the way React works - when using Derive - you are **not required** to call an explicit `save()` method to have your data be saved and persisted on a db - it's enough that you make some change to an exisiting data object, or create a new one - and Derive will already know to handle that data's persistence.
 
@@ -243,9 +242,9 @@ Your `_id` values will vary, of-course.
 * Version 2+ now uses [Change Streams](https://docs.mongodb.com/manual/changeStreams/) to listen for DB persistence changes and events. This means that when you work with a local document, 
 even when the data changes in the DB from some other external source - **this change will be detected** and **will be** automatically reflected in your version of the document as well. <br>
 **NOTE**: Change Streams are only supported for Replica Sets. If you use a single DB instance, then they will **not be used**, and changes will only be triggered by the 
-`SyncManager` itself - this means that in this case - changes to the db from another external source - **will not** be immediately reflected in your local documents (you would need to call the `.get()` method to retreive a "fresh copy"). Note that the Mongo team recommends to **always use** replica sets in production environments. <br>
+`SyncManager` itself - this means that in this case - changes to the DB from another external source - **will not** be immediately reflected in your local documents (you would need to call the `.get()` method to retreive a "fresh copy"). Note that the Mongo team recommends to **always use** replica sets in production environments. <br>
 Change Streams are also only supported in WiredTiger storage engine (which is the default for Mongo).
-* New in version 2+: all Derive objects now have a `$_dbEvents` meta property which is an EventEmitter, which you can use to listen for DB persistence events for specific instances. 
+* New in version 2+: all Derive objects now have a `$_dbEvents` meta property which is an `EventEmitter`, that you can use to listen for DB persistence events for specific instances. 
 See ... for more information.
 * Version 2+ update: the `$_updated` method is now deprecated in favour of a different syntax for defining callbacks for specific db updates. See ... for more information.
 
@@ -282,7 +281,7 @@ So, for example with the following:
 You will first see the `console.log` message from the `_created` and *then* the message from the (extended class) constructor.
 After a short while, when the document is inserted on the db - you will see messages logged from the `_inserted` method (if a `console.log` was defined there and `debugMode` was defined with `true` when initializing the `Model` module).
 
-#### Database persistence callbacks
+#### Database Persistence Callbacks
 
 Derive has several predefined callbacks defined on the Model class level, are available to all Model instances, and can be overriden in a child class, or in the model definition itself. These method names start with an underscore (`_`).
 Derive also allows defining callback methods on specific instances, these method names start with `$_`.
@@ -321,26 +320,33 @@ Feisty.captain = {
 }
 ```
 
-##### DB-persistence events
+#### Database Persistence Events (`$_dbEvents`)
 **NOTE**: `$_inserted` and `$_updated` meta methods are *deprecated* since version 2 and up.
 
 Each Derive data object will have a `$_dbEvents` meta property, which is an `EventEmitter` object, which you can use to listen for db persistence events and changes, 
 by calling the `on` or `once` methods to listen for events in specific instances, and attach handler functions (see [Node Events documentation](https://nodejs.org/api/events.html) for more information about `EventEmitter`).
 
 These are the events available via `$_dbEvents`:
-###### `inserted`: called once a MongoDB document for this instance was inserted to the db. The callback function receives two arguments:
-####### `id`: the `_id` of the inserted document.
-####### `insertedObject`: this is the same relevant Derive data object instance that was created.
-####### Example:
+###### `inserted` Event
+Called once a MongoDB document for this instance was inserted to the DB collection. The callback function receives two arguments:
+####### `id` 
+The `_id` of the inserted document.
+####### `insertedObject` 
+This is the same relevant Derive data object instance that was created.
+####### Example
 ```javascript
 (new PhotonTorpedos()).$_dbEvents.once("inserted", (id, torpedos)=> {
     // `torpedos` is the PhotonTorpedos instance.
 });
-###### `updated`: called once a MongoDB document's property is updated on the db. The callback function receives three arguments:
-####### `id`: the `_id` of the updated document.
-####### `updatedFields`: an object where the keys are updated property names, and the values are the new updated values.
-####### `updatedDocument`: the Derive object instance.
-####### Example:
+###### `updated` Event 
+Called once a MongoDB document's property is updated on the db. The callback function receives three arguments:
+####### `id` 
+The `_id` of the updated document.
+####### `updatedFields`
+An object where the keys are updated property names, and the values are the new updated values.
+####### `updatedDocument` 
+The Derive object instance.
+####### Example
 ```javascript
 BoldlyGo.$_dbEvents.on("updated", (id, updatedFields)=> {
     console.log ("BoldlyGo updated properties: ");
