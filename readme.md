@@ -355,10 +355,10 @@ BoldlyGo.$_dbEvents.on("updated", (id, updatedFields)=> {
 });
 ```    
 
-The following are additional ways to implement DB persistence callbacks, they were the recommended ways for previous versions of Derive. For versions 2 and up, the 
-recommended way is to subscribe to db events, or use "assignment with `$callback`" syntax.
+The following are additional ways to implement DB persistence callbacks. They were the recommended ways for previous versions of Derive. <br>
+For versions 2 and up, the recommended way is to subscribe to DB events, or use ["assignment with `$callback`" syntax](#assignment-with-callback-syntax).
 
-###### Setting a callback function to a meta property
+###### Setting A Callback Function to a Meta Property
 You can define a meta property on the model, to hold a callback function.
 
 ```javascript
@@ -392,9 +392,6 @@ var ship = new Ship("shipA","", function() {
 
 Note how when overriding a constructor in a child class - you need to specify the indexes as arguments before adding new ones, and of-course, you need to call the parent constructor via `super`.
 
-###### Using events
-This is a deprecated obsolete way, as starting with version 2 all data object instances have the `$_dbEvents` EventEmitter.
-
 ##### `_isDuplicate()`
 Called when the MongoDB server yields a "duplicate key value" error, and contains by default: <br>
 `console.log (this[MainIndex]+" has a duplicate key value!");`
@@ -403,12 +400,12 @@ Called when the MongoDB server yields a "duplicate key value" error, and contain
 Called whenever there is a data-related error for this object, and contains by default: <br>
 `console.log ("Error in "+this[MainIndex]+": "+msg);`
 
-##### Listening for updates on the database
+##### Listening For Updates on the Database
 
 ###### `$onUpdate()`
-**Deprecated** since version 2. See "assignment with `$callback` syntax".
+**Deprecated** since version 2. See ["assignment with `$callback` syntax"](#assignment-with-callback-syntax).
 
-##### Listening for local changes
+##### Listening For Local Changes
 The fourth built-in method can be used when you want to listen for value-changes on certain properties of your object,
 (**Note**: this will trigger on *local* changes to the properties, regardless to their state in the equavilent documents in the database collection)
 
@@ -419,7 +416,7 @@ The `changed` method contains this code by default: <br>
 ###### `$Listen`
 To register a property for the listener, put its name (as a string) inside an array defined as the `$Listen` meta-property (e.g. `$Listen: [ "property" ,"otherproperty", "objectprop.prop"]`.
 
-### Unique indexes
+### Unique Indexes
 Now, we decide that we want the `_name` property index to be unique:
 
 ```javascript
@@ -508,7 +505,7 @@ if (process.argv[2] == "--remodel") {
 ```
 
 
-## Going further - extending and deriving models
+## Going Further - Extending and Deriving Models
 
 Let's define a "sub-type" of `Spaceship`, we'll call it a `Battleship`, and we'll also add a property to hold its weapons.
 If we do it like this (note, this is the WRONG way):
@@ -622,7 +619,7 @@ const Spaceship = Model({
 	}
 ```
 
-### `which` argument
+### `which` Argument
 When you use the `which` argument, you have two options - 
 if you pass a **primitive** value (string, number or boolean) - then the function will look for objects where the `MainIndex` is that value,
 if you pass an **object** - then that object will be used as a query object for Mongo's `find`. <br>
@@ -663,7 +660,7 @@ Get all "`_TYPE C`" spaceships into an array:
 var spaceships = await Spaceship.getAll({_TYPE:"C"});
 ```
 
-### map - additional information
+### `map` - Additional Information
 The `map` method has additional two optional arguments (other than the first `which`): `index`: to specify a different index to be used as the key
 for mapping the objects (other than `MainIndex`), and `returnArray`: a boolean specifying if to return the result as an "associative array" of object instances mapped to key indexes or as an object with object instances mapped to index keys.
 
@@ -702,7 +699,7 @@ Will return `true` if a Spaceship object with its `_name` set to "`The Beyond`" 
 The method also have a second argument - `returnDocument`, a boolean that if set to `true` will also return the object if it exist on the db 
 (or `false` if it doesn't).
 
-#### A word of caution for when using the `get` functions
+#### A Word of Caution for When Using the `get` Functions
 Upon retrieving the objects from the database - their `constructor` functions **will** be called for each object.
 Therefore - if you override the constructor and have any code that affects or changes the data there - it **will** run - that is usually *not* desired when retrieving data object, so you should make sure you call the `get` functions from a (usually "higher") class that runs a constructor that does not change the data (like the default constructor).
 
@@ -807,10 +804,7 @@ To "dereference" the object, you can use the `get` function by passing it the DB
 var thebeyond = await Spaceship.get("The Beyond");
 var ricard = await CrewMember.get(thebeyond._captain);
 ```
-
-
-
-## Indexes and how they are handled in the Mongo server
+## Indexes and How They are Handled in the Mongo Server
 
 Indexes in collections are saved in 4 different compound indexes (specified by their index name:)
 * "`nonUnique`": an index containing all non unique (non-sparse) indexes
@@ -821,11 +815,11 @@ Indexes in collections are saved in 4 different compound indexes (specified by t
 Collections may have only some or none of these indexes defined, depending on indexes defined on the model.
 There will also be the `_id` index defined, as usual.
 
-## Putting it all together:
+## Putting it All Together:
 The following is a complete demonstration, expanding on the `Spaceship` idea and models. <br>
 The following code examples can also be found in [this github repository](https://github.com/yuval-a/spaceships-derivejs-demo).
 
-### Defining our models
+### Defining Our Models
 First we define all of our data models, in a separate `Models.js` file:
 
 ```javascript
@@ -938,7 +932,7 @@ module.exports = new Promise( (resolve,reject)=> {
 });
 ```
 
-### Writing our app
+### Writing Our App
 The app code will be in an `app.js` file:
 
 ```javascript
@@ -1060,7 +1054,7 @@ After we restore our ships data from the database -
 then The Boldly Go lowers its shields, and attacked by Feisty again - 
 with the shields down - The Boldly Go "integrity hull" suffers a damage of 20 percent.
 
-## Advanced subjects
+## Advanced Subjects
 ### Join
 You can perform a "join" query with the `join` static method all model classes have:
 `join(which,joinWith,localField,foreignField,joinAs,returnAsModel=false)`
@@ -1072,7 +1066,7 @@ You can perform a "join" query with the `join` static method all model classes h
 `returnAsModel` - if set to true, then the function will return an instance of the model (as in when using the `get` function) - you will most likely **not** want to set it to `true`, as the model will have "foreign" fields - and once you try setting or changing them - it will try to persist it to the db. 
 This function is usually used only for getting "readonly" data, and not data you want to modify or change.
 
-#### An example use case:
+#### An Example Use Case:
 Let's say you have a `Posts` collection and a `User` collection, and you want to get the data for a certain post, and join it with the user data of the user who posted it. With the following assumptions:
 * You have a `Post` model defined, with `_email` as its primary key, and `_authorId` with a string id containing the id of the user who posted it.
 * Your `Users` collection documents have a `_userId` field with string ids
