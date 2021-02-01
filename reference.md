@@ -5,15 +5,15 @@ This document is a reference, describing all methods and functions available whe
 - [Introduction](#introduction)
   * [Modules](#modules)
     + [`Model(options)`](#modeloptions)
-  * [`Model` function](#modelmodel-name-syncinterval)
-  * [Static methods](#static-methods)
+  * [`Model` Function](#modelmodel-name-syncinterval)
+  * [Static Methods](#static-methods)
     + [`derive`](#derivederivemodel)
     + [`use`](#usemixin)
     + [`collection`](#collection)
     + [`collectionReady`](#collectionready)
     + [`remodel`](#remodeloptions)
     + [`clear`](#clearwhich)
-    + [Data retrieval methods](#data-retrieval-methods)
+    + [Data Retrieval Methods](#data-retrieval-methods)
       - [`get`](#getwhich)
       - [`getAll`](#getallwhich-sortby-limit0-skip0)
       - [`map`](#mapwhich-index-returnarray-limit0-skip0)
@@ -22,13 +22,15 @@ This document is a reference, describing all methods and functions available whe
       - [`join`](#joinwhichjoinwithlocalfieldforeignfieldjoinasreturnasmodelfalse)
       - [`joinAll`](#joinallwhich-joinopts-findopts-returnasmodelfalse)
       - [`mainIndex`](#mainindex)
-  * [Instance methods](#instance-methods)
+  * [Instance Methods](#instance-methods)
     + [`_inserted`](#_inserted)
     + [`_error`](#_errormsg)
     + [`_isDuplicate`](#_isduplicate)
     + [`changed`](#changedproperty-newvalue-oldvalue)
-    + [`$onUpdate`](#onupdate-property-value-callback)
-    + [`_created`](#created)
+    + [Assignment with `$callback` Syntax (Update Callbacks)](#assignment-with-callback-syntax-update-callbacks)
+  * [Instance Events (`$_dbEvents`)](#instance-events-_dbevents)
+    + [`inserted` Event](#inserted-event)
+    + [`updated` Event](#updated-event)
   * [Other data model related options](#other-data-model-related-options)
     + [`$Listen`](#listen)
     + [`$DefaultCriteria`](#defaultcriteria)
@@ -343,6 +345,25 @@ The error message is passed in `msg`.
 ### `_isDuplicate()`
 Called when an existing duplicate value of the document equivalent to this data object, was set on a unique index.
 
+### Assignment with `$callback` Syntax (Update Callbacks)
+With this syntax, instead of directly assigning a value to a property of a data object, you instead assign it an object with two properties:
+
+#### `$value`
+The actual value you want to assign.
+
+#### `$callback`
+A function that will be called once the property of the equalivent document in the DB is actually updated.
+
+Example:
+Feisty.captain = {
+    $value: Wort,
+    $callback: ()=> {
+        console.log ("Wort was updated as the captain of the Feisty");
+    }
+}
+
+The value of `$value` will be assigned to the property, and the function in `$callback` will be called once that property is updated with that value on the DB.
+
 ### `changed(property, newValue, oldValue)`
 This function will trigger upon changes to certain properties. To register a property to be listened to, put its name on a `$Listen` meta property, in the model defiwhich is the criteria for the document to retrieve from the "primary" ("local" collection),
 joinWith is the name of the "secondary" ("foreign") collection (as a string).
@@ -356,16 +377,6 @@ The name of the property that its value changed.
 The new value of the property.
 ##### `oldValue`
 The pevious, old, value of the property.
-
-### `$onUpdate (property, value, callback)`
-You can use this function to listen for when a certain value of a certain property is updated on the DB.
-#### Arguments
-##### `property`
-The name of the property.
-##### `value`
-The value which the listener listens to.
-##### `callback`
-A callback function. Once the value of `property` is updated to `value` in the DB, `callback` will be triggered.
 
 ### `_created()`
 This function is not defined by default on a data object instance - but you can define it yourself - if you do, it will trigger whenever a data object is created (locally), 
