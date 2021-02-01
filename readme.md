@@ -303,9 +303,9 @@ will yield:
 ##### "Assignment with `$callback`" Syntax (Update Callbacks)
 This is the new way in version 2 and up to assign function callbacks for specific property updates to a data object. With this syntax, instead of directly assigning a value 
 to a property of a data object, you instead assign it an object with two properties:
-###### $value
+###### `$value`
 The actual value you want to assign.
-###### $callback
+###### `$callback`
 A function that will be called once the property of the equalivent document in the DB is actually updated.
 ###### Example:
 ```javascript
@@ -316,6 +316,8 @@ Feisty.captain = {
     }
 }
 ```
+The value of `$value` will be assigned to the property, and the function in `$callback` will be called once that property is updated with that value on the DB.
+
 ##### `_isDuplicate()`
 Called when the MongoDB server yields a "duplicate key value" error, and contains by default: <br>
 `console.log (this[MainIndex]+" has a duplicate key value!");`
