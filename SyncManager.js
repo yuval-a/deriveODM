@@ -1,15 +1,8 @@
-const clone = require('lodash.clonedeep');
-const MongoClient = require('mongodb').MongoClient,
-      ModelMapper = require('./MongoModelMapper'),
-      EventEmitter = require('events');
+const { isMainThread } = require('worker_threads');
+const { MongoClient } = require('mongodb');
+const ModelMapper = require('./MongoModelMapper');
+const EventEmitter = require('events');
 
-
-class Update {
-    constructor(operation, callback) {
-        this.operation = operation;
-        this.callback = callback;
-    }
-}
 var SyncManager = {
 
     dbUrl: "mongodb://localhost:27017/", //deriveDB",
@@ -26,28 +19,52 @@ var SyncManager = {
     },
 
     Mapper: ModelMapper,
+
+    mergeOptions: function(options) {
+        if (options) {
+            if (typeof options === "string") {
+                this.dbUrl = options;
+            }
+            else if (typeof options === "object")
+                for (let o in options)
+                    this[o] = options[o];
+        }
+    },
+    collection: function(options, collectionName) {
+        this.mergeOptions(options);
+        return new Promise ((resolve,reject)=> {
+            new MongoClient(this.dbUrl, this.dbOptions)
+            .connect()
+            .then(client=>client.db(this.dbName))
+            .then(
+                db=> {
+                    resolve (db.collection(collectionName));
+                }
+            );
+
+        });
+    },
     init: function(options) {
 
-        if (options) {
-                if (typeof options === "string") {
-                    this.dbUrl = options;
-                }
-                else if (typeof options === "object")
-                    for (var o in options)
-                        this[o] = options[o];
-        }
+        this.mergeOptions(options);
+
+        var isChangeStreamSupported;
 
         return new Promise ( (resolve,reject)=> {
 
             new MongoClient(this.dbUrl, this.dbOptions)
             .connect()
-            .then(client=>client.db(this.dbName))
+            .then(client=> {
+                const watcher = client.watch();
+                // Detect if Cluster / Replica set. ChangeStream is only supported for Replica sets
+                isChangeStreamSupported = watcher.topology.s.clusterTime ? true : false;
+                return client.db(this.dbName);
+            })
             .then(
 
                 async db=> {
 
                     var DebugMode = this.debugMode;
-
                     function findByIndexInArray(arr, i) {
                         return arr.find(function(item) {
                             return item.index == i;
@@ -80,7 +97,6 @@ var SyncManager = {
                                 uniqueLocalKeys = Object.keys(uniqueIndexes);
                             var nonUniqueName = ( sparse ? "sparse_nonUnique" : "nonUnique" ),
                                 uniqueName    = ( sparse ? "sparse_unique" : "unique" );
-
 
                             this.lock();
                             this.collection.indexes().then(async indexList=> {
@@ -170,12 +186,13 @@ var SyncManager = {
                             this.setMaxListeners(1000000); // Allow many listeners to the "unlock" event
                             //this.locked = false;
                             this.collectionName = collection;
+                            if (!isMainThread) this.collectionName += " WorkerThread";
                             this.insertLocked = false;
                             this.updateLocked = false;
                             this.running = false;
                             this.db = db;
                             this.Mapper = SyncManager.Mapper;
-                            this.SYNC_INTERVAL = syncInterval || 1000;
+                            this.SYNC_INTERVAL = syncInterval || 0;
                             this.SYNC_INTERVAL_ID = null;
                             this.PENDING = false;
 
@@ -193,6 +210,8 @@ var SyncManager = {
                                 .then(()=> {
                                     this.collection = this.db.collection(collection);
                                     this.ensureIndexes(indexes, uniqueIndexes, false);
+                                    // this.collectionWatch();
+                                    if (!this.running) this.run();
                                     this.emit('ready');
                                     this.unlock();
                                 });
@@ -201,10 +220,17 @@ var SyncManager = {
                             else {
                                 this.collection = this.db.collection(collection);
                                 this.ensureIndexes(indexes, uniqueIndexes, false);
+                                // this.collectionWatch();
+                                if (!this.running) this.run();
                             }
 
-                            if (DebugMode) console.log (this.collectionName+": Sync manager created");
+                            if (DebugMode) this.log ("Sync manager created");
 
+                        }
+
+                        // For debugging - auto prefixes collection name to message
+                        log(message) {
+                            console.log (this.collectionName + ": " + message);
                         }
 
                         lock() {
@@ -218,24 +244,24 @@ var SyncManager = {
                         lockInsert() {
                             if (this.insertLocked) return;
                             this.insertLocked = true;
-                            if (DebugMode) console.log (this.collectionName+": Sync manager insert locked");
+                            if (DebugMode) this.log ("Sync manager insert locked");
                         }
                         unlockInsert() {
                             if (!this.insertLocked) return;
                             this.insertLocked = false;
                             this.emit("insertUnlocked");
-                            if (DebugMode) console.log (this.collectionName+": Sync manager insert unlocked");
+                            if (DebugMode) this.log ("Sync manager insert unlocked");
                         }
                         lockUpdate() {
                             if (this.updateLocked) return;
                             this.updateLocked = true;
-                            if (DebugMode) console.log (this.collectionName+": Sync manager update locked");
+                            if (DebugMode) this.log ("Sync manager update locked");
                         }
                         unlockUpdate() {
                             if (!this.updateLocked) return;
                             this.updateLocked = false;
                             this.emit("updateUnlocked");
-                            if (DebugMode) console.log (this.collectionName+": Sync manager update unlocked");
+                            if (DebugMode) this.log ("Sync manager update unlocked");
                         }
 
                         clearInserts() {
@@ -252,12 +278,19 @@ var SyncManager = {
 
                         run() {
                             if (this.running) {
-                                console.log (this.collectionName+": SyncManager already running");
+                                this.log ("Tried to run SyncManager, but already running");
                                 return;
                             }
                             this.clear();
                             this.PENDING = false;
-                            this.SYNC_INTERVAL_ID = setInterval(this.sync.bind(this), this.SYNC_INTERVAL);
+
+                            // Start syncing intervals
+                            this.SYNC_INTERVAL_ID = setInterval(()=> {
+                                setImmediate(this.sync.bind(this)); 
+                            }, this.SYNC_INTERVAL);
+
+                            // this.SYNC_INTERVAL_ID = setInterval(this.sync.bind(this), this.SYNC_INTERVAL);
+                                
                             this.running = true;
                         }
                         stop() {
@@ -272,55 +305,38 @@ var SyncManager = {
                             let insert = this.Mapper.Create(obj);
                             if (!this.insertLocked) {
                                 this.BULK.inserts[obj._id] = insert;
-                                //if (Object.keys(this.BULK.inserts).length > 100) this.sync.call(this);
                             }
                             else {
                                 this.once("insertUnlocked",function() {
                                     this.BULK.inserts[obj._id] = insert;
-                                    //if (Object.keys(this.BULK.inserts).length > 100) this.sync.call(this);
                                 });
                             }
                         }
 
-                        update(obj,index,property,value,oldValue) {
-                            var update = this.Mapper.Update(index,property,value);
-
-                            if (!this.updateLocked) {
+                        // callback is a function to call once the update occurs
+                        update(obj, index, property, value, oldValue, callback = false) {
+                            let update = this.Mapper.Update(index, property, value);
+                            update.$callback = callback;
+                            if (!this.updateLocked) {   
                                 this.BULK.updates.push ( update );
-                                //if (this.BULK.updates.operations.length > 100) this.sync.call(this);
                             }
                             else {
                                 this.once("updateUnlocked",function() {
                                     this.BULK.updates.push ( update );
-                                    //if (this.BULK.updates.operations.length > 100) this.sync.call(this);
                                 });
                             }
                         }
 
-                        addUpdateCallback (id, property, value, callback) {
-                            if ( !(id in this.BULK.updateCallbacks) )
-                                this.BULK.updateCallbacks[id] = {};
-                            if ( !(property in this.BULK.updateCallbacks[id]) )
-                                this.BULK.updateCallbacks[id][property] = [];
-                            if ( !(value in this.BULK.updateCallbacks[id][property]) )
-                                this.BULK.updateCallbacks[id][property][value] = [];
+                        unset(obj, index, property) {
+                            var update = this.Mapper.Unset(index, property);
 
-                            if (!this.updateLocked) {                                
-                                this.BULK.updateCallbacks[id][property][value].push (callback);
+                            if (!this.updateLocked) {
+                                this.BULK.updates.push ( update );
                             }
                             else {
                                 this.once("updateUnlocked",function() {
-                                    this.BULK.updateCallbacks[id][property][value].push (callback);
+                                    this.BULK.updates.push ( update );
                                 });
-                            }
-                        }
-                        //syncManager.addUpdateCallback(this._id,property,value,callback);
-
-                        handleInsertResults(inserted, inserts) {
-                            let _id;
-                            for (let i=0,len=inserted.length;i<len;i++) {
-                                _id = inserted[i];
-                                if (inserts[_id]) inserts[_id]._inserted();
                             }
                         }
 
@@ -331,39 +347,21 @@ var SyncManager = {
 
                             return new Promise ( (resolve, reject)=> {
                                 this.lockInsert();
-                                if (DebugMode) console.log ("Running "+insertDocs.length+" inserts...");
-                                this.collection.insertMany(insertDocs, {ordered:false}).then(
-                                    res=> {
-                                        var inserted = Object.values(res.insertedIds);
-                                        // We clone the inserts here, overwriting the same variable - 
-                                        // so we can unlock and return, freeing the engine to handle more inserts
-                                        inserts = clone(inserts);
-                                        insertDocs = Object.values(inserts);
-                                        this.unlockInsert();
-                                        resolve();
-                                        
-                                        if (inserted.length !== insertDocs.length) {
-                                            console.log ("insertedIds length different than insertDocs length!");
-                                            process.exit();
-                                        }
-                                        // Handle inserts
-                                        if (inserted.length) {
-                                            this.handleInsertResults(inserted, inserts);
-                                        }
-                                    }
-                                )
+                                if (DebugMode) this.log ("Running "+insertDocs.length+" inserts...");
+                                this.collection.insertMany(insertDocs, {ordered:false})
                                 .catch (err=> {
                                     // Mongodb 3.x skips the then in-case of error - but still saves inserted ids on a "result" object
                                     //console.dir (err, {depth: null});
                                     let result = err.result;
                                     if (!result) {
-                                        console.log (err.message);
+                                        this.log (err.message);
                                         return;
-                                    } 
-                                    let inserted = result.getInsertedIds(),
-                                        op;
+                                    }
+                                    let op;
                                     if (result.hasWriteErrors()) {
                                         var writeErrors = result.getWriteErrors(), ins;
+                                        // console.log ("GOT WRITE ERRORS: ");
+                                        // console.dir( writeErrors, { depth: null} );
                                         for (let we of writeErrors) {
                                             op = we.getOperation();
                                             ins = inserts[op._id];
@@ -374,13 +372,13 @@ var SyncManager = {
                                                 ins._error(we.errmsg);
                                         }
                                     }
-                                    inserted = inserted.map(item=>item._id);
-                                    if (inserted.length) {
-                                        this.handleInsertResults(inserted);
-                                    }
-
                                 })
                                 .then (function() {
+                                    if (!isChangeStreamSupported) 
+                                        insertDocs.forEach(doc=> {
+                                            doc.$_dbEvents.emit("inserted", doc._id, doc);
+                                            if (doc._inserted) doc._inserted.call(doc);
+                                        });
                                     this.clearInserts();
                                     this.unlockInsert();
                                     resolve(); // <- otherwise syncer will be stuck in PENDING forever. Fixed in 20/11/18
@@ -389,87 +387,38 @@ var SyncManager = {
                         }
                         
                         handleUpdates(updates) {
-                            if (!updates.length || this.updateLocked) return Promise.resolve();
-                            return new Promise ( (resolve,reject)=> {
+                            if (!updates.length) return Promise.resolve();
+                            return new Promise ( (resolve, reject)=> {
                                 //console.time("updates");
                                 this.lockUpdate();
-                                if (DebugMode) console.log ("Handling "+updates.length+" updates...");
+                                if (DebugMode) this.log ("Handling "+updates.length+" updates...");
                                 this.collection.bulkWrite(updates).then(
-                                    res=> {
-                                        // We clone the updates here, overwriting the same variable - 
-                                        // so we can unlock and return, freeing the engine to handle more updates
-                                        updates = clone(updates);
-                                        //console.timeEnd("updates");
-                                        this.unlockUpdate();
-                                        resolve();
-
-                                        // update operation example:
-                                        /*
-                                        updateOne: {
-                                            _id: id 
-                                            filter: { 
-                                                _id: ObjectID {  _bsontype: 'ObjectID', id: Buffer [ 90, 222, 107, 69, 61, 137, 249, 85, 200, 4, 22, 17 ] }
-                                            },
-                                            update: { 
-                                                '$set': { '_currentLocation.location': 10 } 
-                                            }
+                                    _=> {
+                                        for (let op of updates) {
+                                            if (op.$callback) op.$callback();
                                         }
-                                        */ 
-
-                                        //var result = res.getRawResponse(), i, len;
-
-                                        //if (result.nModified) {
-                                            var id,prop,val,cbs,cb;
-                                            for (var op of updates) {
-                                                id = op.updateOne._id;
-                                                prop = Object.keys(op.updateOne.update.$set)[0],
-                                                val = op.updateOne.update.$set[prop];
-                                                if (id in this.BULK.updateCallbacks && prop in this.BULK.updateCallbacks[id] && val in this.BULK.updateCallbacks[id][prop]) {
-                                                    cbs = this.BULK.updateCallbacks[id][prop][val];
-                                                    while (cbs.length) {
-                                                        cb = cbs.shift();
-                                                        cb();
-                                                    }
-                                                }
-                                                /*
-                                                if (op.updateOne.update.$set.hasOwnProperty('_currentLocation.location')) {
-                                                    console.log ("set current location:");
-                                                    console.dir (op,{depth:null});
-                                                }
-                                                */
-                                            }
-                                        //}
-
-                                        // Result of the bulk operations
-                                        /*
-                                        if (res.hasWriteErrors()) {
-                                            console.log ("UPDATE HAS WRITE ERRORS!");
-                                            console.log ("operations:", updates.operations.length,"modified:",result.nModified);
-                                            console.dir (updates.operations, {depth:null});
-                                            console.log ("Errors:",);
-                                            console.log (res.getWriteErrors());
-                                            process.exit();
-                                        }
-                                        */
                                     },
                                     err=> {
-                                        console.log ("Sync Manager bulk write error: ",err);
-                                        resolve();
+                                        this.log ("Sync Manager bulk write error: ");
+                                        console.log (err);
                                     }
 
                                 )
                                 .catch(err=> {
-                                        console.log ("Sync Manager bulk write error: ",err);
-                                        resolve();
+                                        this.log ("Sync Manager bulk write error: ");
+                                        console.log (err);
                                 })
                                 .then(function() {
                                     this.clearUpdates();
                                     this.unlockUpdate();
+                                    resolve();
                                 }.bind(this));
                             });
                         }
 
                         sortUpdates() {
+                            // THIS LOCK WAS ADDED TO FIX A RACE CONDITION! Where a new update was added to bulk, JUST BEFORE the sorting happens (the sorting rely on BULK.updates)
+                            this.lockUpdate();
                             return new Promise ((resolve,reject)=> {
                                 var updates = [], xupdates = [];
                                 var u, id;
@@ -497,41 +446,55 @@ var SyncManager = {
 
                         async sync() {
                             // If no operations in queue - set PENDING to false
-                            if (!this.hasOperations()) this.PENDING = false;
+                            if (!this.hasOperations()) {
+                                // this.log ("NO OPERATIONS TO SYNC");
+                                this.PENDING = false;
+                                return;
+                            }
 
                             if (this.PENDING) {
                                 if (DebugMode) {
-                                    console.log ("Sync for "+this.collectionName+" canceled. Previous sync already pending");
-                                    console.log (Object.keys(this.BULK.inserts).length+" inserts pending. "+this.BULK.updates.length+" updates pending.");
+                                    // this.log ("Sync for "+this.collectionName+" postponed. Previous sync already pending");
+                                    // this.log (Object.keys(this.BULK.inserts).length+" inserts pending. "+this.BULK.updates.length+" updates pending.");
                                 }
                                 return;
                             }
 
                             this.PENDING = true;
-                            var handlePromises = [];
-                            var syncer = this;
-                            var hasXUpdates = false;
+                            const syncer = this;
+
+                            // If no updates or no inserts - the handle function simply resolves
+                            let handleUpdates = ()=> Promise.resolve();
+                            let handleInserts = ()=> Promise.resolve();
+                            let updates = false;
+                            // eXclusive updates - updates dependant on inserts (should only run after insterts are done)
+                            let xupdates = false;
 
                             if (this.BULK.updates.length) {
-                                var updates  = [],
-                                    // eXclusive updates - updates dependant on inserts (should only run after insterts are done)
-                                    xupdates = [];
+
                                 [ updates, xupdates ] = await this.sortUpdates();
-                                handlePromises.push(syncer.handleUpdates (updates));
-                                hasXUpdates = true;
+                                // A function that returns a promise which resolves once the handleUpdates promise is resolved
+                                handleUpdates = 
+                                ()=> new Promise (resolve=> { syncer.handleUpdates(updates).then(()=> { resolve(); }) } );
                             }
 
                             if (Object.keys(this.BULK.inserts).length) {
-                                handlePromises.push(
+                                // A function that returns a promise which resolves once the handleInserts, and optionaly the handleUpdates with xupdates promise(s) is/are resolved
+                                handleInserts =
+                                ()=> new Promise(resolve=> {
                                     syncer.handleInserts()
-                                    .then(function() { 
-                                        if (hasXUpdates) return syncer.handleUpdates(xupdates);
+                                    .then(()=> { 
+                                        if (xupdates) 
+                                            syncer.handleUpdates(xupdates).then(()=> { resolve(); } );
+                                        else resolve();
                                     })
-                                );
+                                });
                             }
 
-                            await Promise.all(handlePromises);
-                            syncer.PENDING = false;                                 
+                            await Promise.all([ handleUpdates(), handleInserts() ]);
+                            syncer.PENDING = false;
+                            // Syncer is free for the next sync
+                            this.emit('syncerFree');
                         }
                     }
                     resolve(SyncerClass);
