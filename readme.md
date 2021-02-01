@@ -302,7 +302,7 @@ will yield:
 
 ##### "Assignment with `$callback`" Syntax (Update Callbacks)
 This is the new way in version 2 and up to assign function callbacks for specific property updates to a data object. With this syntax, instead of directly assigning a value 
-to a property of the object, you instead assign it an object with two properties:
+to a property of a data object, you instead assign it an object with two properties:
 ###### $value
 The actual value you want to assign.
 ###### $callback
