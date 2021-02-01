@@ -327,7 +327,9 @@ Called whenever there is a data-related error for this object, and contains by d
 `console.log ("Error in "+this[MainIndex]+": "+msg);`
 
 #### Database Persistence Events (`$_dbEvents`)
-**NOTE**: `$_inserted` and `$_updated` meta methods are *deprecated* since version 2 and up.
+**NOTES**: 
+* `$_inserted` and `$_updated` meta methods are *deprecated* since version 2 and up.
+* `$onUpdate()` is also *deprecated* since version 2. See ["assignment with `$callback` syntax"](#assignment-with-callback-syntax-update-callbacks).
 
 Each Derive data object has a built-in `$_dbEvents` meta property, which is an `EventEmitter` object, that you can use to listen for DB persistence events and changes, 
 by calling the `on` or `once` methods to listen for events in specific instances, and attach handler functions (see [Node Events documentation](https://nodejs.org/api/events.html) for more information about `EventEmitter`).
@@ -396,12 +398,6 @@ var ship = new Ship("shipA","", function() {
 ```
 
 Note how when overriding a constructor in a child class - you need to specify the indexes as arguments before adding new ones, and of-course, you need to call the parent constructor via `super`.
-
-
-##### Listening For Updates on the Database
-
-###### `$onUpdate()`
-**Deprecated** since version 2. See ["assignment with `$callback` syntax"](#assignment-with-callback-syntax-update-callbacks).
 
 ##### Listening For Local Changes
 The fourth built-in method can be used when you want to listen for value-changes on certain properties of your object,
