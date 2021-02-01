@@ -25,7 +25,7 @@ and running bulk operations in fixed (settable) intervals. The background engine
       - [New Model Instance Lifecycle](#new-model-instance-lifecycle)
       - [Database Persistence Callbacks](#database-persistence-callbacks)
         + [`_inserted()`](#_inserted)
-        + ["Assignment with`$callback`" Syntax (Update Callbacks](#assignment-with-callback-syntax-update-callbacks)
+        + ["Assignment with`$callback`" Syntax (Update Callbacks)](#assignment-with-callback-syntax-update-callbacks)
         + [`_isDuplicate()`](#_isDuplicate)
         + [`_error(msg)`](#_errormsg)
       - [Database Persistence Events (`$_dbEvents`)](#database-persistence-events-_dbevents)
