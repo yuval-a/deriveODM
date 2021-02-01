@@ -1,25 +1,7 @@
-const SyncManager = require('./SyncManager');
+/* DO NOT extend Model class with an Event Emitter, as it will interfere with Proxy implementation */
 const clone = require('lodash.clonedeep');
 const DBRef = require('mongodb').DBRef;
-
-
-/* Unused, but kept because it might be useful in future versions/features 
-function setPropByPath(prop, value) {
-    if (typeof prop === "string")
-        prop = prop.split(".");
-
-    if (prop.length > 1) {
-        var e = prop.shift();
-        setPropByPath(this[e] =
-                 Object.prototype.toString.call(this[e]) === "[object Object]"
-                 ? this[e]
-                 : {},
-               prop,
-               value);
-    } else
-        this[prop[0]] = value;
-}
-*/
+const EventEmitter = require('events');
 
 module.exports = function(options) {
 
@@ -28,10 +10,8 @@ module.exports = function(options) {
   
   return new Promise( (resolve,reject)=> {
 
-    SyncManager.init(options).then(
-
+    require('./SyncConnector')(options).then(
         Syncer=> {
-
             // Handles proxying, per SyncManager
             class ProxyHandle {
 
@@ -46,6 +26,7 @@ module.exports = function(options) {
                         set: function(target, property, value, receiver) {
                             // Always allow setting the _id property
                             if (property==="_id") return Reflect.set(target,property,value,receiver);
+                            
                             var propDescrp = Reflect.getOwnPropertyDescriptor(target, property);
                             // If property not defined in model
                             if (!propDescrp) {
@@ -60,12 +41,24 @@ module.exports = function(options) {
                                 }
                                 // If not meta property
                                 else if (! (property.indexOf('$')===0)) {
+                                    let callback = false;
+                                    // Special assignment with callback
+                                    if (typeof value === "object" && "$value" in value) {
+                                        if (!"$callback" in value) {
+                                            target._error ("Must use $callback when using object assignment with $value. $callback not found!");
+                                            return false;
+                                        }
+                                        // Make the callback "asynchronous"
+                                        let $callback = value.$callback;
+                                        callback = ()=> { setTimeout($callback.bind(target), 0) };
+                                        value = value.$value;
+                                    }
                                     // If the property is set to a DeriveJS object - save a DBRef instead
                                     if (value && value.hasOwnProperty('$_ModelInstance')) {
-                                        value = new DBRef(value.$_ModelInstance,value._id);
+                                        value = new DBRef(value.$_ModelInstance, value._id);
                                     }
-                                    // Add an Mongo Update call to the bulk operations
-                                    syncManager.update (target, target._id, property, value, target[property]);
+                                    // Add an Mongo Update call to the bulk operations, with optional update callback
+                                    syncManager.update (target, target._id, property, value, target[property], callback);
                                 }
                                 if (target.$Listen && target.$Listen.indexOf(property) > -1) {
                                     target.changed (property, value, target[property]);
@@ -74,18 +67,34 @@ module.exports = function(options) {
                                 return Reflect.set(target,property,value,receiver);
                             }
                         },
-                        allowedGet: [ 'inspect', 'toBSON', 'toJSON', '_bsontype', 'then', '_created', 'length' ],
+                        allowedGet: [ 'inspect', 'toBSON', 'toJSON', '_bsontype', 'then', '_created', 'length', '_id' ],
                         get: function(target, property, receiver) {
-                            //console.log ("get: ",property," called on ",target);
                             if (typeof property === "symbol" || this.allowedGet.indexOf(property)>-1 || property.indexOf('$')===0)
                                 return Reflect.get(target, property, receiver);
 
                             if (!Reflect.has(target,property) ) {
                                 console.warn("WARNING: Tried to get unknown property: "+property);
-                                //throw new ReferenceError('Trying to get unknown property: ',property);
                             }
                             return Reflect.get(target, property, receiver);
-                        }
+                        },
+
+                        deleteProperty(target, property) {
+                            if (property==="_id") {
+                                target._error ("Cannot unset _id property.");
+                                return true;
+                            }
+                            var propDescrp = Reflect.getOwnPropertyDescriptor(target, property);
+                            // If property not defined in model
+                            if (!propDescrp) {
+                                // Invoke the _error method on the object instance
+                                target._error ("Trying to unset unknown property: "+property+" (property value is left unchanged).");
+                                return true;
+                            }
+
+                            // Add an Mongo Update with unset call to the bulk operations
+                            syncManager.unset (target, target._id, property);
+                            return Reflect.deleteProperty(target, property);
+                          }
                     }
                 }
 
@@ -102,13 +111,23 @@ module.exports = function(options) {
                                 if (! (prop.indexOf('$')===0)) {
                                     if (! (Array.isArray(target) && prop === "length" ) ) {
                                         var setPath = path+'.'+prop;
+
+                                        let callback = false;
+                                        // Special assignment with callback
+                                        if (typeof value === "object" && "$value" in value) {
+                                            if (!"$callback" in value) {
+                                                target._error ("Must use $callback when using object assignment with $value. $callback not found!");
+                                                return false;
+                                            }
+                                            callback = value.$callback;
+                                            value = value.$value;
+                                        }
     
                                         if (value && value.hasOwnProperty('$_ModelInstance')) {
-                                            value = new DBRef(value.$_ModelInstance,value._id);
+                                            value = new DBRef(value.$_ModelInstance, value._id);
                                         }
-
                                         
-                                        syncManager.update (originalTarget, originalTarget._id, setPath, value, target[prop]);
+                                        syncManager.update (originalTarget, originalTarget._id, setPath, value, target[prop], callback);
                                     }
                                 }
                                 if (originalTarget.$Listen && originalTarget.$Listen.indexOf(setPath) > -1) {
@@ -133,11 +152,9 @@ module.exports = function(options) {
 
             String.prototype.isUpperCase = function() {
                 return (/[a-z]+?/.test(this) === false);
-            
             }
 
             function Model(model,name,syncInterval, _syncer, _proxy) {
-
                 var IndexProps = new Set(), UniqueIndexes = {}, Indexes = {};
                 var MainIndex;
                 var $DefaultCriteria = {};
@@ -146,10 +163,11 @@ module.exports = function(options) {
                 // will contain the first unique index and first index
                 var uniqueIndex = false, index = false;
                 
-                // Add secret boolean to know it's a model instance
-                model.$_ModelInstance = name+"s";
+                model.$_ModelInstance = name+"s"; // Add secret boolean to know it's a model instance
                 model.$_BARE = null; // Will be used to contain a "bare" object (unproxified)
-                
+                model.$_dbEvents = null; // Will be used for updated and inserted events
+                model.$_collectionWatcher = null;
+
                 for (var prop in model) {
 
                     criteria = false;
@@ -205,12 +223,11 @@ module.exports = function(options) {
                         proxyHandle = _proxy
                 }
 
-
                 var modelGet = null;
                 var indexProps = [...IndexProps];
 
-                var ModelClass = 
-                class {
+                let ModelClass = class {
+                //class ModelClass {
 
                     constructor() {
                         Object.defineProperties (this,clone(PropDescrp));
@@ -244,17 +261,56 @@ module.exports = function(options) {
                             Object.defineProperty (this, p, {writable:false});                            
                         }
 
-                        var proxy = new Proxy(this,proxyHandle.ModelHandler());
+                        // if (!syncManager.running) syncManager.run();
 
-                        if (!syncManager.running) syncManager.run();
+                        this.$_BARE = Object.assign ({}, this);
+                        this.$_dbEvents = new EventEmitter();
+                        this.$_collectionWatcher = ModelClass.collection().watch({ fullDocument: 'updateLookup' });
+                        
+                        // ChangeStream (collection watch) is only supported for Replica Sets
+                        // If not supported then dbevents will be triggered from SyncManager
+                        if (this.$_collectionWatcher.topology.s.clusterTime) {
+                            const collectionInsertedHandler = changeData=> {
+                                if (changeData.operationType != 'insert') return;
+                                let id = changeData.documentKey._id;
+                                if (this._id.toString() == id.toString()) {
+                                    // We make sure to pass `this` to events and callbacks, so the passed object will be a proxied (Derive) object.
+                                    this.$_dbEvents.emit("inserted", id, this);
+                                    if (this._inserted) this._inserted.call(this);
+                                    this.$_collectionWatcher.off("inserted", collectionInsertedHandler);
+                                }
+                            };
+                            const collectionUpdateHandler = changeData=> {                        
+                                if (changeData.operationType != 'update') return;
+                                let id = changeData.documentKey._id;
+                                if (this._id.toString() == id.toString()) {
+                                    let updatedFields = changeData.updateDescription.updatedFields;
+                                    if (changeData.updateDescription.hasOwnProperty('removedFields')) {
+                                        // fields that are unset
+                                        for (let removedField of changeData.updateDescription.removedFields)
+                                            updatedFields[removedField] = null;
+                                    }
+                                    for (let field in updatedFields) this[field] = updatedFields[field];
+                                    // We make sure to pass `this` to events and callbacks, so the passed object will be a proxied (Derive) object.                                    
+                                    this.$_dbEvents.emit("updated", changeData.documentKey._id, updatedFields, this);
+                                }
+                            };
+                            this.$_collectionWatcher.on('error', error=> {
+                                console.log (this.syncManager.collectionName + " watcher error: " + error);
+                            });
+                            this.$_collectionWatcher.on('change', collectionInsertedHandler);
+                            this.$_collectionWatcher.on('change', collectionUpdateHandler);
+                        }
 
                         if (modelGet) {
                             modelGet =  null;
                         }
                         else {
-                            syncManager.create(proxy);
+                            syncManager.create(this);
                         }
-                        proxy.$_BARE = Object.assign({}, proxy);
+                        // proxy.$_BARE = Object.assign({}, proxy);
+                        // proxy.$_dbEvents = new EventEmitter();
+                        var proxy = new Proxy(this, proxyHandle.ModelHandler());
                         return proxy;
                     }
 
@@ -349,12 +405,6 @@ module.exports = function(options) {
                         if (DefaultMethodsLog) console.log (this[MainIndex]+":",property,"changed from",oldValue,"to",newValue);
                     }
 
-                    $onUpdate (property, value, callback) {
-                        //console.log ("ADDING UPDATE CALLBACK");
-                        syncManager.addUpdateCallback(this._id, property, value, callback);
-                        //setPropByPath.call(this, property, value);
-                    }
-
                     static collection() {
                         return syncManager.collection;
                     }
@@ -393,6 +443,10 @@ module.exports = function(options) {
                                 else 
                                     criteria[MainIndex] = which;
                             }
+                            
+                            // This can happen if the collection does not exist
+                            if (!criteria) reject("get: Document "+(which._id?which._id:"")+" not found! (Does collection " + this.collectionName + " exists?)");
+
                             syncManager.collection.findOne(criteria)
                             .then(
                                 doc=>{
@@ -428,6 +482,7 @@ module.exports = function(options) {
                             let sort = ( sortBy ? sortBy : {MainIndex:-1} );
                             var all = [], allDocs;
 
+                            if (!criteria) reject("getAll: invalid criteria! (Does collection " + this.collectionName + " exists?)");
                             allDocs = syncManager.collection.find(criteria,{
                                 sort:sort,
                                 skip:skip,
@@ -716,7 +771,35 @@ module.exports = function(options) {
                 Object.defineProperty (ModelClass, 'name', { value:name });
                 // Set default criteria
                 ModelClass.$DefaultCriteria = $DefaultCriteria;
-                return ModelClass;
+
+                // Multithread mode requires getting a reference to the collection on the Syncer class (SyncConnector)
+                // THIS MEANS THAT IN MULTITHREADED MODE THE MODEL FUNCTION RETURNS A PROMISE!
+                /*
+                if (options.multiThreaded) {
+                    return new Promise((resolve,reject)=> {
+                        syncManager.getCollection(name+"s")
+                        .then(()=> { 
+                            resolve(ModelClass); 
+                        });
+                    });
+                }
+                else {
+                    return ModelClass;
+                }
+                */
+                /* If we want to trap the constructor at some point
+                return new Proxy(ModelClass, {
+                    construct: function(target, argumentsList, newTarget) {
+                        console.log ("Constructor: ");
+                        console.dir (target.name,    { depth: null} );
+                        console.dir (newTarget.name, { depth: null} );
+                        return Reflect.construct(target, argumentsList, newTarget);
+                    },
+                });
+                */
+
+               return ModelClass;
+
             }
 
             resolve (Model);
