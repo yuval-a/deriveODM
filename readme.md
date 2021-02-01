@@ -746,7 +746,7 @@ Will now return just the `Spaceship` objects that also has their `_TYPE` set to 
 
 *Note*: You shouldn't access `$DefaultCriteria` directly. In case you do, make sure you set its properties, and **not** override it completely.
 
-## Using model instances as values in other models
+## Using Model Instances as Values in Other Models
 
 Let's define a new model: `CrewMember`. The `crew` array of our `Spaceships` will contain `CrewMember` objects:
 
