@@ -224,7 +224,7 @@ var SyncManager = {
                                 if (!this.running) this.run();
                             }
 
-                            if (DebugMode) this.log ("Sync manager created");
+                            if (DebugMode) this.log ("Sync Manager created");
 
                         }
 
@@ -244,24 +244,24 @@ var SyncManager = {
                         lockInsert() {
                             if (this.insertLocked) return;
                             this.insertLocked = true;
-                            if (DebugMode) this.log ("Sync manager insert locked");
+                            if (DebugMode) this.log ("Sync Manager insert locked");
                         }
                         unlockInsert() {
                             if (!this.insertLocked) return;
                             this.insertLocked = false;
                             this.emit("insertUnlocked");
-                            if (DebugMode) this.log ("Sync manager insert unlocked");
+                            if (DebugMode) this.log ("Sync Manager insert unlocked");
                         }
                         lockUpdate() {
                             if (this.updateLocked) return;
                             this.updateLocked = true;
-                            if (DebugMode) this.log ("Sync manager update locked");
+                            if (DebugMode) this.log ("Sync Manager update locked");
                         }
                         unlockUpdate() {
                             if (!this.updateLocked) return;
                             this.updateLocked = false;
                             this.emit("updateUnlocked");
-                            if (DebugMode) this.log ("Sync manager update unlocked");
+                            if (DebugMode) this.log ("Sync Manager update unlocked");
                         }
 
                         clearInserts() {

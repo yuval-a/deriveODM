@@ -41,25 +41,39 @@ module.exports = function(options) {
                                 }
                                 // If not meta property
                                 else if (! (property.indexOf('$')===0)) {
-                                    let callback = false;
-                                    // Special assignment with callback
+                                    let callback  = false;
+                                    let localOnly = false;
                                     if (typeof value === "object" && "$value" in value) {
-                                        if (!"$callback" in value) {
-                                            target._error ("Must use $callback when using object assignment with $value. $callback not found!");
-                                            return false;
-                                        }
-                                        // Make the callback "asynchronous"
-                                        let $callback = value.$callback;
-                                        callback = ()=> { setTimeout($callback.bind(target), 0) };
-                                        value = value.$value;
+                                            /*
+                                            if (!"$callback" in value) {
+                                                target._error ("Must use $callback when using object assignment with $value. $callback not found!");
+                                                return false;
+                                            }
+                                            */
+                                            // Special assignment with callback
+                                            if ("$callback" in value) {
+                                                // Make the callback "asynchronous"
+                                                let $callback = value.$callback;
+                                                callback = ()=> { setTimeout($callback.bind(target), 0) };
+                                            }
+
+                                            // This is a "local only" update (called when an update is triggered from an external source)
+                                            if ("$localOnly" in value && value.$localOnly == true) localOnly = true;
+
+                                            value = value.$value;
                                     }
+
                                     // If the property is set to a DeriveJS object - save a DBRef instead
                                     if (value && value.hasOwnProperty('$_ModelInstance')) {
                                         value = new DBRef(value.$_ModelInstance, value._id);
                                     }
-                                    // Add an Mongo Update call to the bulk operations, with optional update callback
-                                    syncManager.update (target, target._id, property, value, target[property], callback);
+
+                                    if (!localOnly) {
+                                        // Add an Mongo Update call to the bulk operations, with optional update callback
+                                        syncManager.update (target, target._id, property, value, target[property], callback);
+                                    }
                                 }
+
                                 if (target.$Listen && target.$Listen.indexOf(property) > -1) {
                                     target.changed (property, value, target[property]);
                                 }
@@ -154,6 +168,53 @@ module.exports = function(options) {
                 return (/[a-z]+?/.test(this) === false);
             }
 
+            // Make sure to call with `this` as (proxied) Model instance
+            function watchCollection (collection) {
+                let collectionWatcher = collection.watch({ fullDocument: 'updateLookup' });
+
+                // ChangeStream (collection watch) is only supported for Replica Sets
+                // If not supported then dbevents will be triggered from SyncManager
+                if (collectionWatcher.topology.s.clusterTime) {
+                    const collectionInsertedHandler = changeData=> {
+                        if (changeData.operationType != 'insert') return;
+                        let id = changeData.documentKey._id;
+                        if (this._id.toString() == id.toString()) {
+                            // We make sure to pass `this` to events and callbacks, so the passed object will be a proxied (Derive) object.
+                            this.$_dbEvents.emit("inserted", id, this);
+                            if (this._inserted) this._inserted.call(this);
+                            this.$_collectionWatcher.off("inserted", collectionInsertedHandler);
+                        }
+                    };
+                    const collectionUpdateHandler = changeData=> {                        
+                        if (changeData.operationType != 'update') return;
+                        let id = changeData.documentKey._id;
+                        if (this._id.toString() == id.toString()) {
+                            let updatedFields = changeData.updateDescription.updatedFields;
+                            if (changeData.updateDescription.hasOwnProperty('removedFields')) {
+                                // fields that are unset
+                                for (let removedField of changeData.updateDescription.removedFields)
+                                    updatedFields[removedField] = null;
+                            }
+                            for (let field in updatedFields) 
+                                this[field] = {
+                                    $value: updatedFields[field],
+                                    $localOnly: true
+                                }
+                            // We make sure to pass `this` to events and callbacks, so the passed object will be a proxied (Derive) object.                                    
+                            this.$_dbEvents.emit("updated", changeData.documentKey._id, updatedFields, this);
+                        }
+                    };
+                    collectionWatcher.on('error', error=> {
+                        console.log (this.syncManager.collectionName + " watcher error: " + error);
+                    });
+                    collectionWatcher.on('change', collectionInsertedHandler);
+                    collectionWatcher.on('change', collectionUpdateHandler);
+                }
+
+                return collectionWatcher;
+            }
+
+
             function Model(model,name,syncInterval, _syncer, _proxy) {
                 var IndexProps = new Set(), UniqueIndexes = {}, Indexes = {};
                 var MainIndex;
@@ -226,6 +287,8 @@ module.exports = function(options) {
                 var modelGet = null;
                 var indexProps = [...IndexProps];
 
+
+
                 let ModelClass = class {
                 //class ModelClass {
 
@@ -265,42 +328,6 @@ module.exports = function(options) {
 
                         this.$_BARE = Object.assign ({}, this);
                         this.$_dbEvents = new EventEmitter();
-                        this.$_collectionWatcher = ModelClass.collection().watch({ fullDocument: 'updateLookup' });
-                        
-                        // ChangeStream (collection watch) is only supported for Replica Sets
-                        // If not supported then dbevents will be triggered from SyncManager
-                        if (this.$_collectionWatcher.topology.s.clusterTime) {
-                            const collectionInsertedHandler = changeData=> {
-                                if (changeData.operationType != 'insert') return;
-                                let id = changeData.documentKey._id;
-                                if (this._id.toString() == id.toString()) {
-                                    // We make sure to pass `this` to events and callbacks, so the passed object will be a proxied (Derive) object.
-                                    this.$_dbEvents.emit("inserted", id, this);
-                                    if (this._inserted) this._inserted.call(this);
-                                    this.$_collectionWatcher.off("inserted", collectionInsertedHandler);
-                                }
-                            };
-                            const collectionUpdateHandler = changeData=> {                        
-                                if (changeData.operationType != 'update') return;
-                                let id = changeData.documentKey._id;
-                                if (this._id.toString() == id.toString()) {
-                                    let updatedFields = changeData.updateDescription.updatedFields;
-                                    if (changeData.updateDescription.hasOwnProperty('removedFields')) {
-                                        // fields that are unset
-                                        for (let removedField of changeData.updateDescription.removedFields)
-                                            updatedFields[removedField] = null;
-                                    }
-                                    for (let field in updatedFields) this[field] = updatedFields[field];
-                                    // We make sure to pass `this` to events and callbacks, so the passed object will be a proxied (Derive) object.                                    
-                                    this.$_dbEvents.emit("updated", changeData.documentKey._id, updatedFields, this);
-                                }
-                            };
-                            this.$_collectionWatcher.on('error', error=> {
-                                console.log (this.syncManager.collectionName + " watcher error: " + error);
-                            });
-                            this.$_collectionWatcher.on('change', collectionInsertedHandler);
-                            this.$_collectionWatcher.on('change', collectionUpdateHandler);
-                        }
 
                         if (modelGet) {
                             modelGet =  null;
@@ -311,6 +338,17 @@ module.exports = function(options) {
                         // proxy.$_BARE = Object.assign({}, proxy);
                         // proxy.$_dbEvents = new EventEmitter();
                         var proxy = new Proxy(this, proxyHandle.ModelHandler());
+
+                        const collection = ModelClass.collection();
+                        if (collection) proxy.$_collectionWatcher = watchCollection.call(proxy, collection);
+                        // This can happen if a collection still doesn't exist
+                        else {
+                            ModelClass.collectionReady()
+                            .then(_=> {
+                                proxy.$_collectionWatcher = watchCollection.call(proxy, ModelClass.collection());                                
+                            });
+                        }
+
                         return proxy;
                     }
 
