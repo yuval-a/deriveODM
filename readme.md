@@ -240,10 +240,11 @@ Your `_id` values will vary, of-course.
 ### Built-in methods: callbacks and hooks
 
 **NEW VERSION UPDATE:**  
-* Version 2+ now uses [Change Streams](https://docs.mongodb.com/manual/changeStreams/) to listen for DB persistence changes. This means that when you work with a local document, 
-even when the data changes in the db from some other external source - **this change will be detected** and **will be** automatically reflected in your version of the document as well. **NOTE**: Change Streams are only supported for Replica Sets. If you use a single db instance, then they will **not be used**, and changes will only be triggered by the 
-SyncManager itself - this means that changes to the db from another external source - **will not** be immediately reflected in your local documents (you would need to call the 
-`.get()` method to retreive a "fresh copy"). Change Streams are also only supported in WiredTiger storage engine (which is the default for Mongo).
+* Version 2+ now uses [Change Streams](https://docs.mongodb.com/manual/changeStreams/) to listen for DB persistence changes and events. This means that when you work with a local document, 
+even when the data changes in the DB from some other external source - **this change will be detected** and **will be** automatically reflected in your version of the document as well. <br>
+**NOTE**: Change Streams are only supported for Replica Sets. If you use a single DB instance, then they will **not be used**, and changes will only be triggered by the 
+`SyncManager` itself - this means that in this case - changes to the db from another external source - **will not** be immediately reflected in your local documents (you would need to call the `.get()` method to retreive a "fresh copy"). Note that the Mongo team recommends to **always use** replica sets in production environments. <br>
+Change Streams are also only supported in WiredTiger storage engine (which is the default for Mongo).
 * New in version 2+: all Derive objects now have a `$_dbEvents` meta property which is an EventEmitter, which you can use to listen for DB persistence events for specific instances. 
 See ... for more information.
 * Version 2+ update: the `$_updated` method is now deprecated in favour of a different syntax for defining callbacks for specific db updates. See ... for more information.
