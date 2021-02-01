@@ -587,7 +587,7 @@ Returns **all** (with an optional filter query) object instances (in an array). 
 The 4th and 5th arguments are `limit` and `skip` that allows you to get only some of the documents.
 
 ### `has(which, returnDocument)` 
-Returns a boolean indicating if the database contains certain value(s). The second `returnDocument` is a boolean - if the document exist and this argument is set to `true` -
+Returns a boolean indicating if a database collection contains certain value(s). The second `returnDocument` is a boolean - if the document exist and this argument is set to `true` -
 the document will also be returned (as a Derive data object), otherwise `false` will be returned (regardless of the value of `returnDocument`).
 
 ### `count(which)` 
@@ -604,7 +604,7 @@ Its value will be determined according to the following:
 * If no index is defined in the model, the **`_id`** property will be determined as the MainIndex.
 
 #### `mainIndex() method`
-You can use the static `mainIndex` method to get the name of the main index, as a string. This can be useful, for example, when overriding any of the (callback methods)[#database-persistence-callbacks], e.g.:
+You can use the static `mainIndex` method to get the name of the main index, as a string. This can be useful, for example, when overriding any of the [callback methods(#database-persistence-callbacks), e.g.:
 
 ```javascript
 const Spaceship = Model({
