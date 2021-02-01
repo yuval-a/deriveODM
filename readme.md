@@ -25,8 +25,8 @@ and running bulk operations in fixed (settable) intervals. The background engine
       - [New Model Instance Lifecycle](#new-model-instance-lifecycle)
       - [Database Persistence Callbacks](#database-persistence-callbacks)
         + [`_inserted()`](#_inserted)
-        + ["Assignment with`$callback`" Syntax](#assignment-with-callback-syntax)
-      - [Database Persistence Events (`$_dbEvents`)](#database-persistence-events-dbevents)
+        + ["Assignment with`$callback`" Syntax (Update Callbacks](#assignment-with-callback-syntax-update-callbacks)
+      - [Database Persistence Events (`$_dbEvents`)](#database-persistence-events-_dbevents)
           - [Setting a callback function to a meta property](#setting-a-callback-function-to-a-meta-property)
           - [Using events](#using-events)
         + [`_isDuplicate()`](#_isDuplicate)
@@ -236,7 +236,7 @@ If we now run the Mongo console, and run a "find all" query on the `Spaceships` 
 
 Your `_id` values will vary, of-course.
 
-### Built-in methods: callbacks and hooks
+### Built-in Methods: Callbacks and Hooks
 
 **NEW VERSION UPDATE:**  
 * Version 2+ now uses [Change Streams](https://docs.mongodb.com/manual/changeStreams/) to listen for DB persistence changes and events. This means that when you work with a local document, 
@@ -248,7 +248,7 @@ Change Streams are also only supported in WiredTiger storage engine (which is th
 See ... for more information.
 * Version 2+ update: the `$_updated` method is now deprecated in favour of a different syntax for defining callbacks for specific db updates. See ... for more information.
 
-#### new Model instance lifecycle
+#### New Model Instance Lifecycle
 When creating a new model object instance - first the, "internal" constructor of the model class is called. 
 This constructor is defined within the `Model` module, and is the same for **all** model classes (having different initialization properties, of-course). First, if the constructor was called as a result of retrieving a data object (document) from the database - the object values will be populated accordingly. Then, this constructor function is basically in-charge of the following things, in this order:
 
@@ -284,8 +284,6 @@ After a short while, when the document is inserted on the db - you will see mess
 #### Database Persistence Callbacks
 
 Derive has several predefined callbacks defined on the Model class level, are available to all Model instances, and can be overriden in a child class, or in the model definition itself. These method names start with an underscore (`_`).
-Derive also allows defining callback methods on specific instances, these method names start with `$_`.
-
 
 ##### `_inserted()`
 
@@ -303,7 +301,7 @@ var ship = new Ship("The Created");
 will yield:
 `The Created created, with id: 5a063f842ef67924f4e0f9bb` (with a different id of-course).
 
-#### "Assignment with `$callback`" syntax 
+#### "Assignment with `$callback`" Syntax (Update Callbacks)
 This is the new way in version 2 and up to assign function callbacks for specific property updates to a data object. With this syntax, instead of directly assigning a value 
 to a property of the object, you instead assign it an object with two properties:
 ##### $value
