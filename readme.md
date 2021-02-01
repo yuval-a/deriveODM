@@ -604,7 +604,7 @@ Its value will be determined according to the following:
 * If no index is defined in the model, the **`_id`** property will be determined as the MainIndex.
 
 #### `mainIndex() method`
-You can use the static `mainIndex` method to get the name of the main index, as a string. This can be useful, for example, when overriding any of the [callback methods(#database-persistence-callbacks), e.g.:
+You can use the static `mainIndex` method to get the name of the main index, as a string. This can be useful, for example, when overriding any of the [callback methods](#database-persistence-callbacks), e.g.:
 
 ```javascript
 const Spaceship = Model({
