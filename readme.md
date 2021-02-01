@@ -49,7 +49,7 @@ and running bulk operations in fixed (settable) intervals. The background engine
     + [`MainIndex`](#mainindex)
       - [`mainIndex() method`](#mainindex-method)
     + [`which` argument](#which-argument)
-    + [map - additional information](#map---additional-information)
+    + [`map` - additional information](#map---additional-information)
     + [A word of caution for when using the `get` functions](#a-word-of-caution-for-when-using-the-get-functions)
     + [`$DefaultCriteria`](#defaultcriteria)
   * [Using model instances as values in other models](#using-model-instances-as-values-in-other-models)
