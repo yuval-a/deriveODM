@@ -329,7 +329,7 @@ by calling the `on` or `once` methods to listen for events in specific instances
 These are the events available via `$_dbEvents`:
 ###### `inserted` Event
 Called once a MongoDB document for this instance was inserted to the DB collection. The callback function receives two arguments:
-####### `id` 
+###### `id` 
 The `_id` of the inserted document.
 ###### `insertedObject` 
 This is the same relevant Derive data object instance that was created.
@@ -341,13 +341,13 @@ This is the same relevant Derive data object instance that was created.
 ```
 ###### `updated` Event 
 Called once a MongoDB document's property is updated on the db. The callback function receives three arguments:
-####### `id` 
+###### `id` 
 The `_id` of the updated document.
-####### `updatedFields`
+###### `updatedFields`
 An object where the keys are updated property names, and the values are the new updated values.
-####### `updatedDocument` 
+###### `updatedDocument` 
 The Derive object instance.
-####### Example
+###### Example
 ```javascript
 BoldlyGo.$_dbEvents.on("updated", (id, updatedFields)=> {
     console.log ("BoldlyGo updated properties: ");
