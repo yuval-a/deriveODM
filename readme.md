@@ -1,6 +1,3 @@
-[Quick documentation](https://yuval.hashnode.dev/derivejs-a-reactive-odm-object-data-mapper-framework-for-mongodb-and-nodejs-ckfspl31f02ryv6s1asqy6wvh) | 
-[API](https://github.com/yuval-a/derivejs/blob/master/reference.md) | 
-[Compare to Mongoose](https://github.com/yuval-a/derivejs/blob/master/mongoose-derive-migration.md)
 
 ## Introduction
 **DeriveJS** lets you manipulate and create Javascript data objects, while **automatically** and **transparently** persisting and updating them on a database (such as MongoDB), in the background, without any additional hassle or code.
@@ -8,8 +5,8 @@
 It wraps your data classes and objects with [Javascript Proxies](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy), "tapping-in" to native operations such as creating instances (using the normal `new` operator), and updating property values (using the normal assignment operator `=`), and then handling passing database calls to the database in the background, while leveraging MongoDB's bulk operations capabilities in a smart way, to save unnecessary calls to the db engine,
 and running bulk operations in fixed (settable) intervals. The background engine is mostly handled transparently by a module called `SyncManager`.
 
-**Note**: this is a complete technical reference, if you'd like to read a less verbose introduction, you can read [this article on Hashnode](https://yuval.hashnode.dev/derivejs-a-reactive-odm-object-data-mapper-framework-for-mongodb-and-nodejs-ckfspl31f02ryv6s1asqy6wvh)
-
+**Note**: this is a complete technical reference, if you'd to read a less verbose introduction, you can read (this article on Hashnode)[https://yuval.hashnode.dev/derivejs-a-reactive-odm-object-data-mapper-framework-for-mongodb-and-nodejs-ckfspl31f02ryv6s1asqy6wvh]
+*
 ## Table of Contents
   * [Introduction](#introduction)
     + [The rationale behind DeriveJS, using an analogy](#the-rationale-behind-derivejs-using-an-analogy)
@@ -29,6 +26,8 @@ and running bulk operations in fixed (settable) intervals. The background engine
       - [Database persistence callbacks](#database-persistence-callbacks)
         + [`_inserted()`](#_inserted)
         + [Defining DB-persistence callbacks for specific instances](#defining-DB-persistence-callbacks-for-specific-instances)
+          - [$_inserted](#$_inserted)
+          - [$_updated](#$_updated)
           - [Setting a callback function to a meta property](#setting-a-callback-function-to-a-meta-property)
           - [Using events](#using-events)
         + [`_isDuplicate()`](#_isDuplicate)
@@ -68,13 +67,13 @@ and running bulk operations in fixed (settable) intervals. The background engine
 
 
 ### The rationale behind DeriveJS, using an analogy
-If you are familiar with a front-end UI framework such as ReactJS, you know that whenever a change is made to the `state` object - React will automatically know to issue a re-render of the component - this is called a "pull" methodology, where as in other similar frameworks, you might need to explicitly call a `render()` method (this is a "push" methodology, in that context).
+If you are familiar with a front-end UI framework such as ReactJS, you know that whenever a change is made to the `state` object - React will automatically know to issue a re-render of the component - this is known as a "pull" methodology, where as in other similar frameworks, you might need to explicitly call a `render()` method (this is a "push" methodology, in that context).
 In a similar analogy to the way React works - when using Derive - you are **not required** to call an explicit `save()` method to have your data be saved and persisted on a db - it's enough that you make some change to an exisiting data object, or create a new one - and Derive will already know to handle that data's persistence.
 
 To sum-up: `DeriveJS` is a reactive ODM (Object Document Mapper), that lets you deal with data, in a DRY way, without having to take care of all the hassle of the logistics of database persistency.
 
 ### Comparison to Mongoose
-If you used or using Mongoose and considering moving to Derive, or would like to see a comparison between the two, you can go over [this document](https://github.com/yuval-a/derivejs/blob/master/mongoose-derive-migration.md).
+If you used or are using Mongoose and considering moving to Derive, or would like to see a comparison between the two, you can go over [this document](https://github.com/yuval-a/derivejs/blob/master/mongoose-derive-migration.md).
 
 ### Reference
 For a complete reference of all available methods, functions and objects available in Derive - [see this document](https://github.com/yuval-a/derivejs/blob/master/reference.md).
@@ -126,8 +125,6 @@ are actually saved on the database, or exactly when specific properties have bee
 
 ## Getting Started
 
-(**Note**: Version 1.x has been updated to support MongoDB Node driver version 3.x. Although it has been tested - if you encounter any issues when upgrading - please report them in the issues tab - in the Git repository)
-
 Install via [npm](https://www.npmjs.com/):<br>
 `npm install derivejs` <br>
 or clone the [git repository](https://github.com/yuval-a/derivejs).
@@ -139,8 +136,8 @@ The `options` can contain these key:value arguments:
 
 * `dbUrl`: the MongoDB server connection url, as a string. Default: "`mongodb://localhost:27017/`".
 * `dbName`: the name of the database, as a string. Default: "`deriveDB`".
-* `debugMode`: A boolean. If set to true - will display some real-time internal `SyncManager` information - such as when it is locked for operation (before running bulk database operations), and unlocked. Default: `true` (!)
-* `defaultMethodsLog`: (new in version 1.x) - when set to `true` - the default class methods for database/data events (`_inserted()`, `_isDuplicate()`, `_error()` and `changed()` will run a relevant `console.log`, see [Database persistence callbacks](#database-persistence-callbacks) for more information about these methods).
+* `debugMode`: A boolean. If set to true - will display some real-time internal db-related `SyncManager` information - such as when it is locked for operation (before running bulk database operations), or unlocked, when running bulk inserts/updates, and more... Default: `true` (!)
+* `defaultMethodsLog`: when set to `true` - the default class methods for database/data events (`_inserted()`, `_isDuplicate()`, `_error()` and `changed()` will run a relevant `console.log`, see [Database persistence callbacks](#database-persistence-callbacks) for more information about these methods).
 * `dbOptions`: You can use this to override the default [MongoDB driver connection options](https://mongodb.github.io/node-mongodb-native/3.5/reference/connecting/connection-settings/). Note that these are the options passed by default:
 ```json
 w:1, 
@@ -167,7 +164,7 @@ derive.Model
 );
 ```
 
-New: starting with version 1.6.0 you may use the `Connect` module function (`derive.Connect`) instead of `Model` (`derive.Model`), which is exactly the same as `Model`, and is used as an alias (both reference the same module) - and was added to avoid confusion between the resolved `Model` function (the function you use to define data models) and the **module** `Model` function (the function which is used to connect to the database and resolve with the `Model` function).
+NEW: starting with version 1.6.0 you may use the `Connect` module function (`derive.Connect`) instead of `Model` (`derive.Model`), which is exactly the same as `Model`, and is used as an alias (both reference the same module) - and was added to avoid confusion between the resolved `Model` function (the function you use to define data models) and the **module** `Model` function (the function which is used to connect to the database and resolve with the `Model` function).
 
 ### Defining a Data Model
 Once the promise resolves successfully, you have access to the `Model` function, which can be used to define a "Data Model", by passing an object literal as an argument, describing the data properties and their default values (as well as some instance methods, when needed). The `Model` function returns a **`class`** "representing" that data model, and its functionality (as mentioned, that class is a special "proxied" class that comes with some built-in stuff in it, to handle database persistence, and offer some static and default instance methods which will be described below).
@@ -242,14 +239,14 @@ Your `_id` values will vary, of-course.
 
 ### Built-in methods: callbacks and hooks
 
-**NEW VERSION UPDATE:**  some of these method names have been **changed** from previous versions:
-* `_created()` was changed to `_inserted()`
-* `_duplicate()` was changed to `_isDuplicate()`
-* `$update()` was changed to `$onUpdate()`
-* added support for `_created()` method which, if defined on a model, gets called once an object instance is created, **before** it is persisted in the db.
-Every instance of an object has some built-in "callback" functions that are called when certain database-persistence related events occur in regards to that object, and each data class also have some "static" callback methods, so you can use them in situations when you need to follow certain events, like having an object inserted to the database collection, having a certain property updated, and more.
-One possible use-case for `created()` is, for example, if you need to set a value for a **unique index** property, before it is inserted into the db; if you won't
-set it, and a default value will be used for it when inserting, then a "duplicate value" error could be triggered.
+**NEW VERSION UPDATE:**  
+* Version 2+ now uses [Change Streams](https://docs.mongodb.com/manual/changeStreams/) to listen for DB persistence changes. This means that when you work with a local document, 
+even when the data changes in the db from some other external source - **this change will be detected** and **will be** automatically reflected in your version of the document as well. **NOTE**: Change Streams are only supported for Replica Sets. If you use a single db instance, then they will **not be used**, and changes will only be triggered by the 
+SyncManager itself - this means that changes to the db from another external source - **will not** be immediately reflected in your local documents (you would need to call the 
+`.get()` method to retreive a "fresh copy"). Change Streams are also only supported in WiredTiger storage engine (which is the default for Mongo).
+* New in version 2+: all Derive objects now have a `$_dbEvents` meta property which is an EventEmitter, which you can use to listen for DB persistence events for specific instances. 
+See ... for more information.
+* Version 2+ update: the `$_updated` method is now deprecated in favour of a different syntax for defining callbacks for specific db updates. See ... for more information.
 
 #### new Model instance lifecycle
 When creating a new model object instance - first the, "internal" constructor of the model class is called. 
@@ -286,6 +283,10 @@ After a short while, when the document is inserted on the db - you will see mess
 
 #### Database persistence callbacks
 
+Derive has several predefined callbacks defined on the Model class level, are available to all Model instances, and can be overriden in a child class, or in the model definition itself. These method names start with an underscore (`_`).
+Derive also allows defining callback methods on specific instances, these method names start with `$_`.
+
+
 ##### `_inserted()`
 
 If you need to know exactly when an object is actually persisted in the database every instance has a built-in instance method: `_inserted()` which is called as soon as it's inserted in the DB.
@@ -302,8 +303,52 @@ var ship = new Ship("The Created");
 will yield:
 `The Created created, with id: 5a063f842ef67924f4e0f9bb` (with a different id of-course).
 
-##### Defining DB-persistence callbacks for specific instances
-If you want to implement specific callbacks for **specific instances**, you have several ways to achieve this:
+#### "Assignment with `$callback`" syntax 
+This is the new way in version 2 and up to assign function callbacks for specific property updates to a data object. With this syntax, instead of directly assigning a value 
+to a property of the object, you instead assign it an object with two properties:
+##### $value
+The actual value you want to assign.
+##### $callback
+A function that will be called once the property of the equalivent document in the DB is actually updated.
+##### Example:
+```javascript
+Feisty.captain = {
+    $value: Wort,
+    $callback: ()=> {
+        console.log ("Wort was updated as the captain of the Feisty");
+    }
+}
+```
+
+##### DB-persistence events
+**NOTE**: `$_inserted` and `$_updated` meta methods are *deprecated* since version 2 and up.
+
+Each Derive data object will have a `$_dbEvents` meta property, which is an `EventEmitter` object, which you can use to listen for db persistence events and changes, 
+by calling the `on` or `once` methods to listen for events in specific instances, and attach handler functions (see [Node Events documentation](https://nodejs.org/api/events.html) for more information about `EventEmitter`).
+
+These are the events available via `$_dbEvents`:
+###### `inserted`: called once a MongoDB document for this instance was inserted to the db. The callback function receives two arguments:
+####### `id`: the `_id` of the inserted document.
+####### `insertedObject`: this is the same relevant Derive data object instance that was created.
+####### Example:
+```javascript
+(new PhotonTorpedos()).$_dbEvents.once("inserted", (id, torpedos)=> {
+    // `torpedos` is the PhotonTorpedos instance.
+});
+###### `updated`: called once a MongoDB document's property is updated on the db. The callback function receives three arguments:
+####### `id`: the `_id` of the updated document.
+####### `updatedFields`: an object where the keys are updated property names, and the values are the new updated values.
+####### `updatedDocument`: the Derive object instance.
+####### Example:
+```javascript
+BoldlyGo.$_dbEvents.on("updated", (id, updatedFields)=> {
+    console.log ("BoldlyGo updated properties: ");
+    console.dir (updatedFields, {depth:null});
+});
+```    
+
+The following are additional ways to implement DB persistence callbacks, they were the recommended ways for previous versions of Derive. For versions 2 and up, the 
+recommended way is to subscribe to db events, or use "assignment with `$callback`" syntax.
 
 ###### Setting a callback function to a meta property
 You can define a meta property on the model, to hold a callback function.
@@ -340,35 +385,7 @@ var ship = new Ship("shipA","", function() {
 Note how when overriding a constructor in a child class - you need to specify the indexes as arguments before adding new ones, and of-course, you need to call the parent constructor via `super`.
 
 ###### Using events
-Another option is to use an [`EventEmitter`](https://nodejs.org/api/events.html) as a meta value:
-
-```javascript
-
-const EventEmitter = require("events");
-var Spaceship = Model({
-    _name: "",
-    _TYPE: "",
-    crew: [],
-
-    $events:EventEmitter
-
-},"Spaceship");
-
-class EventfulShip extends Spaceship {
-    constructor(_name,_TYPE) {
-        super(_name,_TYPE);
-        this.$events = new EventEmitter();
-    }
-    _inserted() {
-        this.$events.emit("created");
-    }
-}
-
-var ship = new EventfulShip("ShipB");
-ship.$events.on("created",function() {
-    console.log ("ship b created!");
-});
-```
+This is a deprecated obsolete way, as starting with version 2 all data object instances have the `$_dbEvents` EventEmitter.
 
 ##### `_isDuplicate()`
 Called when the MongoDB server yields a "duplicate key value" error, and contains by default: <br>
@@ -379,29 +396,10 @@ Called whenever there is a data-related error for this object, and contains by d
 `console.log ("Error in "+this[MainIndex]+": "+msg);`
 
 ##### Listening for updates on the database
-**Note**: `$UpdateListen` from previous versions is currently *deprecated*.
 
 ###### `$onUpdate()`
-Each Model class also has an `$onUpdate()` method, that you can use if you need to know exactly when
-a certain property has been **updated and saved on the database**. The `$onUpdate()` method is used as follows:
+**Deprecated** since version 2. See "assignment with `$callback` syntax".
 
-```javascript 
-$onUpdate (property, value, callback)
-```
-`callback` is a function that will be executed the next time that `property` is set to `value`.
-Note that `property` is a **string**. If the property is nested, simply use its nested notation as a string, e.g.
-`someprop.anotherprop.prop`.
-Note also that the callback will be called only **once**, as soon as the property is set to `value` after `$onUpdate()` was called.
-Also note, that `$onUpdate` **doesn't** actually set the value on `property` - you have to do it yourself explicitly; so, if you have some instance `dataobj`, and you want to run some code as soon as the property `prop` on it is updated on the db to, let's say `25`:
-
-```javascript
-   dataobj.$onUpdate ("prop",25, function() {
-        // some code here...
-   });
-   // Actually update the value. This will set it on the local object, and soon after - it will also be updated on the db,
-   // and then the callback in $onUpdate above will be called
-   dataobj.prop = 25;
-```
 ##### Listening for local changes
 The fourth built-in method can be used when you want to listen for value-changes on certain properties of your object,
 (**Note**: this will trigger on *local* changes to the properties, regardless to their state in the equavilent documents in the database collection)
@@ -1131,7 +1129,7 @@ new Promise(async (resolve, reject)=> {
 });
 ```
 
-Then we can call the `log` function, for example on a `Spaceship` model:
+Then we can implement the `log` function, for example on a `Spaceship` model:
 
 ```javascript        
     var Spaceship = Model({
