@@ -361,7 +361,8 @@ BoldlyGo.$_dbEvents.on("updated", (id, updatedFields)=> {
     console.log ("BoldlyGo updated properties: ");
     console.dir (updatedFields, {depth:null});
 });
-```    
+```
+
 The following are additional ways to implement DB persistence callbacks. They were the recommended ways for previous versions of Derive. <br>
 For versions 2 and up, the recommended way is to subscribe to DB events, or use ["assignment with `$callback`" syntax](#assignment-with-callback-syntax).
 
