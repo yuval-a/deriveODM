@@ -66,7 +66,7 @@ and running bulk operations in fixed (settable) intervals. The background engine
 
 ### The Rationale Behind DeriveJS, Using an Analogy
 If you are familiar with a front-end UI framework such as ReactJS, you know that whenever a change is made to the `state` object - React will automatically know to issue a re-render of the component - this is known as a "pull" methodology, where as in other similar frameworks, you might need to explicitly call a `render()` method (this is a "push" methodology, in that context).
-In a similar analogy to the way React works - when using Derive - you are **not required** to call an explicit `save()` method to have your data be saved and persisted on a db - it's enough that you make some change to an exisiting data object, or create a new one - and Derive will already know to handle that data's persistence.
+In a similar analogy to the way React works - when using Derive - you are **not required** to call an explicit `save()` method to have your data be saved and persisted on a DB - it's enough that you make some change to an exisiting data object, or create a new one - and Derive will already know to handle that data's persistence.
 
 To sum-up: `DeriveJS` is a reactive ODM (Object Document Mapper), that lets you deal with data, in a DRY way, without having to take care of all the hassle of the logistics of database persistency.
 
@@ -134,7 +134,7 @@ The `options` can contain these key:value arguments:
 
 * `dbUrl`: the MongoDB server connection url, as a string. Default: "`mongodb://localhost:27017/`".
 * `dbName`: the name of the database, as a string. Default: "`deriveDB`".
-* `debugMode`: A boolean. If set to true - will display some real-time internal db-related `SyncManager` information - such as when it is locked for operation (before running bulk database operations), or unlocked, when running bulk inserts/updates, and more... Default: `true` (!)
+* `debugMode`: A boolean. If set to true - will display some real-time internal DB-related `SyncManager` information - such as when it is locked for operation (before running bulk database operations), or unlocked, when running bulk inserts/updates, and more... Default: `true` (!)
 * `defaultMethodsLog`: when set to `true` - the default class methods for database/data events (`_inserted()`, `_isDuplicate()`, `_error()` and `changed()` will run a relevant `console.log`, see [Database persistence callbacks](#database-persistence-callbacks) for more information about these methods).
 * `dbOptions`: You can use this to override the default [MongoDB driver connection options](https://mongodb.github.io/node-mongodb-native/3.5/reference/connecting/connection-settings/). Note that these are the options passed by default:
 ```json
@@ -245,17 +245,17 @@ even when the data changes in the DB from some other external source - **this ch
 Change Streams are also only supported in WiredTiger storage engine (which is the default for Mongo).
 * New in version 2+: all Derive objects now have a `$_dbEvents` meta property which is an `EventEmitter`, that you can use to listen for DB persistence events for specific instances. 
 See [Database Persistence Events (`$_dbEvents`)](#database-persistence-events-_dbevents) for more information.
-* Version 2+ update: the `$_updated` method is now *deprecated* in favour of a new different syntax for defining callbacks for specific db updates. 
+* Version 2+ update: the `$_updated` method is now *deprecated* in favour of a new different syntax for defining callbacks for specific DB updates. 
 See ["Assignment with`$callback`" Syntax (Update Callbacks)](#assignment-with-callback-syntax-update-callbacks) for more information.
 
 #### New Model Instance Lifecycle
 When creating a new model object instance - first the, "internal" constructor of the model class is called. 
 This constructor is defined within the `Model` module, and is the same for **all** model classes (having different initialization properties, of-course). First, if the constructor was called as a result of retrieving a data object (document) from the database - the object values will be populated accordingly. Then, this constructor function is basically in-charge of the following things, in this order:
 
-1. "Proxifiying" all (non-meta) property values of the object (so they can all be automatically persisted to the db upon change).
-2. Starting (running) the associated `SyncManager` class (if it's not already running) - which will "gather" db-related operations and bulk-run them in fixed intervals for the associated db collection).
-3. If this is a **new** data object - create a **local** data (MongoDB) document first - this is the point where the `_created` function of the data class is called (if defined) - and is the "last chance" to make new changes before the data object will be persisted on the db (of-course, you can also update any of its properties as you like later-on, and they'll be persisted as well).
-4. The `SyncManager` puts an `insert` operation in the queue of the next bulk db operations to be run.
+1. "Proxifiying" all (non-meta) property values of the object (so they can all be automatically persisted to the DB upon change).
+2. Starting (running) the associated `SyncManager` class (if it's not already running) - which will "gather" DB-related operations and bulk-run them in fixed intervals for the associated DB collection).
+3. If this is a **new** data object - create a **local** data (MongoDB) document first - this is the point where the `_created` function of the data class is called (if defined) - and is the "last chance" to make new changes before the data object will be persisted on the DB (of-course, you can also update any of its properties as you like later-on, and they'll be persisted as well).
+4. The `SyncManager` puts an `insert` operation in the queue of the next bulk DB operations to be run.
 
 It's important to note, that if you extend a Model class, and define both a constructor on the extended class **and** a `_created` method - 
 the `_created` method will be called **before** the extended class constructor finishes - as it needs to call the base class ("super") constructor first, which will call `_created` if defined.
@@ -279,7 +279,7 @@ So, for example with the following:
     var ship = new Ship("a new ship");
 ```
 You will first see the `console.log` message from the `_created` and *then* the message from the (extended class) constructor.
-After a short while, when the document is inserted on the db - you will see messages logged from the `_inserted` method (if a `console.log` was defined there and `debugMode` was defined with `true` when initializing the `Model` module).
+After a short while, when the document is inserted on the DB - you will see messages logged from the `_inserted` method (if a `console.log` was defined there and `debugMode` was defined with `true` when initializing the `Model` module).
 
 #### Database Persistence Callbacks
 
@@ -349,7 +349,7 @@ This is the same relevant Derive data object instance that was created.
 });
 ```
 ##### `updated` Event 
-Called once a MongoDB document's property is updated on the db. The callback function receives three arguments:
+Called once a MongoDB document's property is updated on the DB. The callback function receives three arguments:
 ###### `id` 
 The `_id` of the updated document.
 ###### `updatedFields`
@@ -631,7 +631,7 @@ To get our "`The Beyond`" Spaceship from the database into a local object:
     Spaceship.get("The Beyond")
     .then (ship=> {
         thebeyond = ship;
-        // thebeyond contains the object from the db
+        // thebeyond contains the object from the DB
     });
 ```
 
@@ -640,11 +640,11 @@ Or, using the `async/await` way:
 ```javascript
 async ()=> {
     var thebeyond = await Spaceship.get("The Beyond");
-    // thebeyond contains the object from the db
+    // thebeyond contains the object from the DB
 });
 ```
 
-Put all of our `Spaceship` objects from the db into an array:
+Put all of our `Spaceship` objects from the DB into an array:
 
 ```javascript
 var spaceships = await Spaceship.getAll();
@@ -691,8 +691,8 @@ The last method `has` can be used to determine if a certain object exist on the 
 ```javascript
 var hasTheBeyond = await Spaceship.has("The Beyond");
 ```
-Will return `true` if a Spaceship object with its `_name` set to "`The Beyond`" exist on the db.
-The method also have a second argument - `returnDocument`, a boolean that if set to `true` will also return the object if it exist on the db 
+Will return `true` if a Spaceship object with its `_name` set to "`The Beyond`" exist on the DB.
+The method also has a second argument - `returnDocument`, a boolean that if set to `true` will also return the object if it exist on the DB 
 (or `false` if it doesn't).
 
 #### A Word of Caution for When Using the `get` Functions
@@ -1059,7 +1059,7 @@ You can perform a "join" query with the `join` static method all model classes h
 * `joinWith` is the name of the "secondary" ("foreign") collection (as a string).
 * `localField` is the name of the field that is equivalent to the `foreignField` on the secondary collection.
 * `joinAs` is the name of a property where the "joined" document will be included into.
-`returnAsModel` - if set to true, then the function will return an instance of the model (as in when using the `get` function) - you will most likely **not** want to set it to `true`, as the model will have "foreign" fields - and once you try setting or changing them - it will try to persist it to the db. 
+`returnAsModel` - if set to true, then the function will return an instance of the model (as in when using the `get` function) - you will most likely **not** want to set it to `true`, as the model will have "foreign" fields - and once you try setting or changing them - it will try to persist it to the DB. 
 This function is usually used only for getting "readonly" data, and not data you want to modify or change.
 
 #### An Example Use Case:
