@@ -10,7 +10,6 @@ var SyncManager = {
     debugMode: true,
 
     dbOptions: {
-        w:1, 
         native_parser:true, 
         forceServerObjectId:true,
         // New in 3.X Mongo engine
