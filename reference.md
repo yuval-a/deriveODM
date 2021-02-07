@@ -115,8 +115,8 @@ This is the name of the collection. You can use a singular name, and Derive will
 as the name - the collection name will be `Persons`.
 
 #### `syncInterval` 
-This sets the interval time, in milliseconds between calls to the DB. Every interval the engine sends a queue of data operations to the DB, to be performed.
-*Default: 1000ms* (1 second).
+This sets the interval time, in milliseconds between calls to the DB. Every interval the engine sends a bulk queue of data operations to the DB, to be performed.
+*Default: 0* (the calls are made within a `setImmediate` function).
 
 ### Returns
 Calling the Model function returns a "data class" - which is a special proxied JS class, tapped to a DB collection, and containing several static methods related to DB operations, 
