@@ -41,7 +41,7 @@ This document is a reference, describing all methods and functions available whe
 ## Modules
 ### `Model(options)`  
 The `Model` module is the only module available in Derive. You call it as a function, passing it an object with options, and it returns a promise that resolves with the 
-`Model` *function* - which you can use to define data models.
+`Model` *function* - which you can use to define data models. <br>
 Starting with version 1.6 -- you may also use the alias `Connect` instead of `Model` (to avoid confusion with the `Model` *function*).
 
 ### Returns
