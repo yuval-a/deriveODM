@@ -248,7 +248,7 @@ using MongoDB query-format.
 The name of the index to map by. Note that it **must** be unique, otherwise some results will override others.
 ###### `returnArray`
 If set to true, will return the results as an array, otherwise will return an object (defaults to an object).
-####### `limit`
+###### `limit`
 Pass a number to limit the number of returned results (default: 0, which means unlimited).
 ###### `skip`
 Pass a number to skip this amount of results and start at a certain offset (default: 0, which means unlimited).
