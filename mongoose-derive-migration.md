@@ -10,10 +10,8 @@ You may use "default values" in the schema definition in Derive, and they can al
 a default numerical hints a number value, and so on...)
 
 ### Model Instances
-In Mongoose, you first define a schema and create an instance of a `Schema` object, and then create a model, by passing a collection name and the schema object -- then you can create
-data instances from the model.
-In Derive this is done in a single step: You use a `Model` function, passing it a model definition (a "schema"), and a name - you get back a class (connected to the DB, 
-this is what Mongoose calls "documents" - as to make them equivalent to Mongo's documents), which you can then create instances of.
+In Mongoose, you first define a schema and create an instance of a `Schema` object, and then create a model, by passing a collection name and the schema object -- then you can create data instances from the model.
+In Derive this is done in a single step: You use a [`Model` function](https://github.com/yuval-a/derivejs#define-a-data-model), passing it a model definition (a "schema"), and a name - you get back a class (connected to the DB, this is what Mongoose calls "documents" - as to make them equivalent to Mongo's documents), which you can then create instances of.
 
 ### Ids
 Both frameworks automatically save documents with an `_id`_ property (of type `ObjectID`). Derive does not allow overrding the default `_id` property, and doing so by adding it to the model definition may yield unexpected results. If you need to use your own `id`, define a different id property (e.g. `_ID`).
@@ -64,7 +62,7 @@ dog.findSimilarTypes()
 ```
 
 ### Deriving Data Objects
-This is one of the powerful features of Derive, by using the `derive` static method to define a new "derived" data object in combination of the Default Criteria feature, you can "extend" data models, and have "sub-models" sharing the same collection as their "super-models":
+This is one of the powerful features of Derive, by using the `derive` static method to define a new "derived" data object in combination of the Default Criteria feature, you can "extend" data models, and have "sub-models" sharing the same collection as their "super-models";
 
 ```javascript
 // Define Animal data model
@@ -90,6 +88,7 @@ Dog.getAll().then(dogs=> {
    // Got all dogs here.
 });
 ```
+See [the documentation](https://github.com/yuval-a/derivejs#going-further---extending-and-deriving-models) for more information.
 
 ### Static methods
 In Mongoose you define statics by extending the statics object of schemas.
@@ -127,7 +126,7 @@ Whenever you declare a model, Derive will automatically check for the existence 
 ### Meta properties ("Secret" properties), known in Mongoose as "virtuals".
 Meta properties are properties that their values won't be persisted on the DB, and are only used locally.
 In Mongoose you use the virtuals method of a schema to define a meta property,
-In Derive you use the special modifier character - the dollar sign ('$') at the beginning of the name of the property:
+In Derive you use the special modifier character - the dollar sign (`$`) at the beginning of the name of the property:
 
 ```javascript
 const Person = class extends Model({
@@ -178,7 +177,7 @@ Certain configurable options can be passed in an object literal as an argument, 
 for a full list of options.
 
 ### Error handling
-Every data class instance has built-in functions for error handling (that can be overrided), these are the `_error()` function and `_isDuplicate()` (a function that
+Every data class instance has built-in functions for error handling (that can be overrided), these are the [`_error()`](https://github.com/yuval-a/derivejs/blob/master/readme.md#_errormsg) function and [`_isDuplicate()`](https://github.com/yuval-a/derivejs/blob/master/readme.md#_isduplicate) (a function that
 will be called whenever trying to update or insert an object with a duplicate value for a unique index).
 
 ### Constructing
@@ -260,7 +259,7 @@ thebeyond.addCrew(ricard);
 ```
 
 ### Resolving DBRefs ("subdocuments")
-In Derive you can use the `get` function to resolve, or dereference a DBRef. Continuing the previous example:
+In Derive you can use the [`get` function](https://github.com/yuval-a/derivejs/blob/master/readme.md#getwhich) to resolve, or dereference a DBRef. Continuing the previous example:
 ```javascript
 var thebeyond = await Spaceship.get("The Beyond");
 var ricard    = await thebeyond.crew[0];
