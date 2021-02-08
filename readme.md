@@ -39,7 +39,7 @@ and running bulk operations in fixed (settable) intervals. The background engine
           - [`$Listen`](#listen)
     + [Unique Indexes](#unique-indexes)
     + [The `remodel` Method](#the-remodel-method)
-  * [Going Further - Extending and Deriving Models](#going-further-extending-and-deriving-models)
+  * [Going Further - Extending and Deriving Models](#going-further---extending-and-deriving-models)
   * [Retrieving Data From a Database](#retrieving-data-from-a-database)
     + [`get`](#getwhich)
     + [`getAll`](#getallwhich-sortby-limit0-skip0)
