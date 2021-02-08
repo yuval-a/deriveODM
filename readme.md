@@ -1,5 +1,5 @@
 
-[Summary](https://yuval.hashnode.dev/derivejs-a-reactive-odm-object-data-mapper-framework-for-mongodb-and-nodejs-ckfspl31f02ryv6s1asqy6wvh) | [Reference](https://github.com/yuval-a/derivejs/blob/master/reference.md) | [Comparison to Mongoose](https://github.com/yuval-a/derivejs/blob/master/mongoose-derive-migration.md)
+[Summary](https://yuval.hashnode.dev/derivejs-a-reactive-odm-object-data-mapper-framework-for-mongodb-and-nodejs-ckfspl31f02ryv6s1asqy6wvh) | [Reference](https://github.com/yuval-a/derivejs/blob/master/reference.md) | [Comparison to Mongoose](https://github.com/yuval-a/derivejs/blob/master/mongoose-derive-migration.md) | [Demonstration](https://github.com/yuval-a/spaceships-derivejs-demo)
 
 ## Introduction
 **DeriveJS** lets you manipulate and create Javascript data objects, while **automatically** and **transparently** persisting and updating them on a database (such as MongoDB), in the background, without any additional hassle or code.
