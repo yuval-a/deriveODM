@@ -28,33 +28,43 @@ const Animal = Model({
    name:"", 
    type:"", 
    findSimilarTypes() { 
-      return Animal.getAll({type: this.type}); 
+      return Animal.getAll({
+         type: this.type
+      }); 
    }
 }, "Animal");
 
 let dog = new Animal();
 dog.type = "dog";
-dog.findSimilarTypes().then(dogs=> {
+dog.findSimilarTypes()
+.then(dogs=> {
    // Got all "dogs" here.
 });
 ```
 
 Example 2 - defining a method in a subclass:
 ```javascript
-const Animal = class extends Model({ name:"", type:"" }, "Animal") {
+const Animal = class extends Model({ 
+   name:"", 
+   type:"" 
+}, "Animal") {
+   
    findSimilarTypes() {
       return Animal.getAll({type: this.type});
    }
+
 }
 
 let dog = new Animal();
 dog.type = "dog";
-dog.findSimilarTypes().then(dogs=> {
+dog.findSimilarTypes()
+.then(dogs=> {
    // Got all "dogs" here in an array.
 });
 ```
 
-However, a suggested and *prefered* way in Derive to achieve the above, might be to use the `derive` method, to define a new "derived" data object, with a default criteria with `type: "Dog"`, for example:
+### Deriving Data Objects
+This is one of the powerful features of Derive, by using the `derive` static method to define a new "derived" data object in combination of the Default Criteria feature, you can "extend" data models, and have "sub-models" sharing the same collection as their "super-models":
 
 ```javascript
 // Define Animal data model
