@@ -95,16 +95,21 @@ Dog.getAll().then(dogs=> {
 In Mongoose you define statics by extending the statics object of schemas.
 In Derive, you can define static methods by simply defining them on a subclass of a Model class. e.g.:
 ```javascript
-   const Animal = class extends Model({ name:"", type:"" }, "Animal") {
-        static findByName(name) {
-            return Animal.get({ name: new RegExp(name, 'i') });
-        }
-    }
+const Animal = class extends Model({ 
+   name:"", 
+   type:"" 
+}, "Animal") {
+   static findByName(name) {
+      return Animal.get({ name: new RegExp(name, 'i') });
+  }
+}
 
-   Animal.findByName("vincent").then(vincent=> {
-        console.log (vincent);
-   });
+Animal.findByName("Vincent")
+.then(vincent=> {
+     console.log (vincent);
+});
 ```
+
 ### Indexes
 In Mongoose you define indexes by using an object literal with `{index: true}` as the value of a data property.
 In Derive you use special "modifier" characters in the name of the property. Use an underscore (`_`) at the begining of a property name, to define it as an index:
@@ -125,25 +130,26 @@ In Mongoose you use the virtuals method of a schema to define a meta property,
 In Derive you use the special modifier character - the dollar sign ('$') at the beginning of the name of the property:
 
 ```javascript
-   const Person = class extends Model({
-        name: { first: "", last: "" },
-        // will contain full name
-        $fullName: "",
-   }, "Person") {
-        
-        constructor() {
-            super();
-            this.$fullName = this.name.first + ' ' + this.name.last;
-        }
-    }
+const Person = class extends Model({
+     name: { first: "", last: "" },
+     // will contain full name
+     $fullName: "",
+}, "Person") {
+
+   constructor() {
+      super();
+      this.$fullName = this.name.first + ' ' + this.name.last;
+   }
+   
+}
 ```
 
 Note, in this example, you can acheive the same result, in a less verbose way, with a model function:
 ```javascript
-   const Person = Model({
-        name: { first: "", last: "" },
-        fullName() { return this.name.first + ' ' + this.name.last; }
-   }, "Person");
+const Person = Model({
+   name: { first: "", last: "" },
+   fullName() { return this.name.first + ' ' + this.name.last; }
+}, "Person");
 ```
 
 The difference being that in the second example, a function is used (and should be called), in the first one a property is used.
@@ -176,7 +182,7 @@ Every data class instance has built-in functions for error handling (that can be
 will be called whenever trying to update or insert an object with a duplicate value for a unique index).
 
 ### Constructing
-To create new data object instances, you simply call the native `new` operator, Derive will take care of the rest -- including inserting an equavilent document into the DB:
+To create new data object instances, you simply call the native `new` operator, Derive will take care of the rest -- including inserting an equivalent document into the DB:
 `let person = new Person();`
 
 ### Querying
@@ -184,44 +190,44 @@ Data classes in Derive have several built in functions for querying data from th
 
 ### Deleting
 In Derive ou can use the `clear()` static method with a query to delete documents.
+To delete properties, simply use the Javascript `delete` keyword - Derive will pass a `unset` operation for that property to the DB for that document.
 
 ### Updating
 To update a data object instance, you use the normal assignment operator (`=`). E.g.:
-`person.name = "Jean Luc Ricard"` . Derive will also make sure that the property in the equavilent document will be updated in the DB.
+`person.name = "Jean Luc Ricard"` . Derive will also make sure that the property in the equivalent document will be updated in the DB.
 
 ### Validating
 There is no explicit validation mechanism in Derive, but it can be achieved in several ways:
 
 Using instance methods:
 ```javascript
-  const Person = Model({
-    name: "",
-    _email: "",
-    setEmail(email) {
-        // Perform email validation here.
-        this._email = email;
-    }
-  }, "Person");
+const Person = Model({
+   name: "",
+   _email: "",
+   setEmail(email) {
+      // Perform email validation here.
+      this._email = email;
+   }
+}, "Person");
 ```
 
 Another option is to use the built-in `$Listen` array to listen for changes to a property, and perform validation in the `changed` function. E.g.:
 ```javascript
-   const Person = Model({
-        name: "",
-        _email: "",
-        $Listen: ["_email"],
-        changed(property, newValue, oldValue) {
-            switch (property) {
-                case "_email":
-                    // Validate email here
-                    console.log (this._email);
-                    // If validation fails, set to null or empty string
-                    this._email = null;
-                    // and throw an error...
-            }
-
-        }
-   }, "Person");
+const Person = Model({
+   name: "",
+   _email: "",
+   $Listen: ["_email"],
+   changed(property, newValue, oldValue) {
+      switch (property) {
+          case "_email":
+              // Validate email here
+              console.log (this._email);
+              // If validation fails, set to null or empty string
+              this._email = null;
+              // and throw an error...
+      }
+   }
+}, "Person");
 ```
 
 ### Overwriting
@@ -260,7 +266,7 @@ var thebeyond = await Spaceship.get("The Beyond");
 var ricard    = await thebeyond.crew[0];
 ```
 
-### Mixins (Plugins).
+### Mixins (Plugins)
 Derive enables the creation of "mixins", via the built-in `use` function, which you can pass an object literal with functions to it - and those functions 
 will be available to all model instances of that data class. See [the documentation](https://www.npmjs.com/package/derivejs#mixins) for more details.
 
