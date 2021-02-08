@@ -54,25 +54,35 @@ dog.findSimilarTypes().then(dogs=> {
 });
 ```
 
-However, a suggested and preffered way in Derive to achieve the above, might be to use the `derive` method, to define a new "derived" data object, with a default criteria with `type: "Dog"`, for example:
+However, a suggested and *prefered* way in Derive to achieve the above, might be to use the `derive` method, to define a new "derived" data object, with a default criteria with `type: "Dog"`, for example:
+
+##### Derive a data model
+One of Derive'js powerful features is the ability to create "sub-models" associated with the same collection as a "super-model", using the [derive](#going-further-extending-and-deriving-models) method, which, together with the [`$DefaultCriteria`](#defaultcriteria) modifier, can be used to create meaningful data "inheritance":
 
 ```javascript
 // Define Animal data model
 const Animal = Model({
    // The underscore denotes this property as an index
-   name:"", 
+   _name:"", 
    type:"", 
 }, "Animal");
 
-// Define a "derived" data model (both Dog and Animal will be under the Animals collection), and assign "Dog" as a default value for `type` for all `Dog` models
-// We use an underscore as the last character to add `type: "Dog"` - to the "Default Criteria" - this means that all data retrieval methods will automatically 
-// add `type:"Dog"` to their find queries.
+/* 
+ * Define a "derived" Dog data model (both Dog and Animal will be under the Animals collection), 
+ * and assign "Dog" as a default value for `type` for all `Dog` models.
+ * We use an underscore as the last character to add `type: "Dog"` - to the "Default Criteria" - 
+ * this means that all data retrieval methods will automatically add `type:"Dog"` to their find queries.
+ */
 const Dog = Animal.derive({ type_:"Dog" });
+
+// The new data object and document (Ubu) will also automatically have `type: "Dog"` associated with it.
+let ubu = new Dog("Ubu");
 
 // Get all Dogs
 Dog.getAll().then(dogs=> {
    // Got all dogs here.
 });
+```
 
 ### Static methods
 In Mongoose you define statics by extending the statics object of schemas.
