@@ -19,7 +19,6 @@ and running bulk operations in fixed (settable) intervals. The background engine
     * [Create an Instance](#create-an-instance)
     * [Manipulate Properties](#manipulate-properties)
     * [Call Instance Functions](#call-instance-functions)
-    * [Derive a data model](#derive-a-data-model)
   * [Getting Started](#getting-started)
     + [Defining a Data Model](#defining-a-data-model)
   * [Going deeper](#going-deeper)
@@ -114,34 +113,6 @@ The document will now have the value `30` set to its `age` property.
 ##### Call instance functions
 ```javascript
 user.setPassword("plaintextpassword");
-```
-
-##### Derive a data model
-One of Derive'js powerful features is the ability to create "sub-models" associated with the same collection as a "super-model", using the [derive](#going-further-extending-and-deriving-models) method, which, together with the [`$DefaultCriteria`](#defaultcriteria) modifier, can be used to create meaningful data "inheritance":
-
-```javascript
-// Define Animal data model
-const Animal = Model({
-   // The underscore denotes this property as an index
-   _name:"", 
-   type:"", 
-}, "Animal");
-
-/* 
- * Define a "derived" Dog data model (both Dog and Animal will be under the Animals collection), 
- * and assign "Dog" as a default value for `type` for all `Dog` models.
- * We use an underscore as the last character to add `type: "Dog"` - to the "Default Criteria" - 
- * this means that all data retrieval methods will automatically add `type:"Dog"` to their find queries.
- */
-const Dog = Animal.derive({ type_:"Dog" });
-
-// The new data object and document (Ubu) will also automatically have `type: "Dog"` associated with it.
-let ubu = new Dog("Ubu");
-
-// Get all Dogs
-Dog.getAll().then(dogs=> {
-   // Got all dogs here.
-});
 ```
 
 And so on...
