@@ -13,7 +13,7 @@ a default numerical hints a number value, and so on...)
 In Mongoose, you first define a schema and create an instance of a `Schema` object, and then create a model, by passing a collection name and the schema object -- then you can create
 data instances from the model.
 In Derive this is done in a single step: You use a `Model` function, passing it a model definition (a "schema"), and a name - you get back a class (connected to the DB, 
-this is what Mongoose calls "documents" - as to make them equaivelent to Mongo's documents), which you can then create instances of.
+this is what Mongoose calls "documents" - as to make them equivalent to Mongo's documents), which you can then create instances of.
 
 ### Ids
 Both frameworks automatically save documents with an `_id`_ property (of type `ObjectID`). Derive does not allow overrding the default `_id` property, and doing so by adding it to the model definition may yield unexpected results. If you need to use your own `id`, define a different id property (e.g. `_ID`).
