@@ -33,6 +33,7 @@ Example 1 - defining a method in the model defintion:
     }, "Animal");
 
     let dog = new Animal();
+    dog.type = "dog";
     dog.findSimilarTypes().then(dogs=> {
         // Got all "dogs" here.
     });
