@@ -505,6 +505,35 @@ if (process.argv[2] == "--remodel") {
 
 ## Going Further - Extending and Deriving Models
 
+One of Derive'js powerful features is the ability to create "sub-models" associated with the same collection as a "super-model", using the [derive](#going-further-extending-and-deriving-models) method, which, together with the [`$DefaultCriteria`](#defaultcriteria) modifier, can be used to create meaningful data "inheritance":
+
+```javascript
+// Define Animal data model
+const Animal = Model({
+   // The underscore denotes this property as an index
+   _name:"", 
+   type:"", 
+}, "Animal");
+
+/* 
+ * Define a "derived" Dog data model (both Dog and Animal will be under the Animals collection), 
+ * and assign "Dog" as a default value for `type` for all `Dog` models.
+ * We use an underscore as the last character to add `type: "Dog"` - to the "Default Criteria" - 
+ * this means that all data retrieval methods will automatically add `type:"Dog"` to their find queries.
+ */
+const Dog = Animal.derive({ type_:"Dog" });
+
+// The new data object and document (Ubu) will also automatically have `type: "Dog"` associated with it.
+let ubu = new Dog("Ubu");
+
+// Get all Dogs
+Dog.getAll().then(dogs=> {
+   // Got all dogs here.
+});
+```
+
+Going back to our "Spaceships":
+
 Let's define a "sub-type" of `Spaceship`, we'll call it a `Battleship`, and we'll also add a property to hold its weapons.
 If we do it like this (note, this is the WRONG way):
 
@@ -548,7 +577,8 @@ class Battleship extends Spaceship
 var bship = new Battleship("The Destroyer");
 ```
 
-The `derive` method returns a new Model Class (*not* a subclass of the original Model class) - that uses the **same** existing database synchronization engine (SyncManager), that is already running for the parent model class (So the `Battleship` class will use the SyncManager of the `Spaceship` class, which is associated with the `Spaceships` Mongo collection).
+The `derive` method returns a new Model Class (*not* a subclass of the original Model class) - that shares the same collection as its "parent" data model (so both will 
+be part of the `Spaceships` collection, and both will use the same existing database synchronization engine (SyncManager).
 
 It is also possible to "override" properties and values in the derived model, and so we can simply "override" the `_TYPE` property in the derived model, and
 set its default value to "`Battleship`". There won't even be a need for a subclass in this case:
@@ -566,7 +596,6 @@ You **may** define new indexes - and only objects instances of the derived class
 are always defined with the `sparse:true` property on the Mongo DB.
 
 You can read more about indexes and how they are managed in deriveJS [here](#indexes-and-how-they-are-handled-in-the-Mongo-server)
-
 
 ## Retrieving data from a database
 You will often want to "restore" existing database objects from data collections and populate your local ones with the persisted data. 
