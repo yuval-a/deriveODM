@@ -130,8 +130,8 @@ const Animal = Model({
 /* 
  * Define a "derived" Dog data model (both Dog and Animal will be under the Animals collection), 
  * and assign "Dog" as a default value for `type` for all `Dog` models.
- * We use an underscore as the last character to add `type: "Dog"` - to the "Default Criteria" - this means that all data retrieval methods will automatically 
- * add `type:"Dog"` to their find queries.
+ * We use an underscore as the last character to add `type: "Dog"` - to the "Default Criteria" - 
+ * this means that all data retrieval methods will automatically add `type:"Dog"` to their find queries.
  */
 const Dog = Animal.derive({ type_:"Dog" });
 
