@@ -1,7 +1,7 @@
 # Introduction
 This document goes through a comparison between the **Mongoose** framework (another popular ODM) and **DeriveJS**, mostly syntax-wise, but occasionly showing the benefits, differences, down-sides and up-sides of both.
 It can also be used as a "migration guide" for people used to Mongoose and are considering to move to DeriveJS.
-It basically follows Mongoose's features as they are presented in their documentation, and compare it to equalivent features in Derive.
+It basically follows Mongoose's features as they are presented in their documentation, and compare it to equivalent features in Derive.
 
 ## Schemas and Models
 A schema is the definition of available data properties in a data model (in Derive it is referred to as "model definition"). In both frameworks you use a JS object literal to
