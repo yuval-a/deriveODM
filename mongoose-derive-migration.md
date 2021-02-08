@@ -24,36 +24,56 @@ In Derive there are two ways: you can directly define instance methods on the mo
 
 Example 1 - defining a method in the model defintion:
 ```javascript
-   const Animal = Model({
-       name:"", 
-       type:"", 
-       findSimilarTypes() { 
-           return Animal.getAll({type: this.type}); 
-        }
-    }, "Animal");
+const Animal = Model({
+   name:"", 
+   type:"", 
+   findSimilarTypes() { 
+      return Animal.getAll({type: this.type}); 
+   }
+}, "Animal");
 
-    let dog = new Animal();
-    dog.type = "dog";
-    dog.findSimilarTypes().then(dogs=> {
-        // Got all "dogs" here.
-    });
+let dog = new Animal();
+dog.type = "dog";
+dog.findSimilarTypes().then(dogs=> {
+   // Got all "dogs" here.
+});
 ```
 
 Example 2 - defining a method in a subclass:
 ```javascript
-   const Animal = class extends Model({ name:"", type:"" }, "Animal") {
-       findSimilarTypes() {
-           return Animal.getAll({type: this.type});
-       }
+const Animal = class extends Model({ name:"", type:"" }, "Animal") {
+   findSimilarTypes() {
+      return Animal.getAll({type: this.type});
    }
+}
 
-    let dog = new Animal();
-    dog.type = "dog";
-    dog.findSimilarTypes().then(dogs=> {
-        // Got all "dogs" here in an array.
-        console.log (dogs);
-    });
+let dog = new Animal();
+dog.type = "dog";
+dog.findSimilarTypes().then(dogs=> {
+   // Got all "dogs" here in an array.
+});
 ```
+
+However, a suggested and preffered way in Derive to achieve the above, might be to use the `derive` method, to define a new "derived" data object, with a default criteria with `type: "Dog"`, for example:
+
+```javascript
+// Define Animal data model
+const Animal = Model({
+   // The underscore denotes this property as an index
+   name:"", 
+   type:"", 
+}, "Animal");
+
+// Define a "derived" data model (both Dog and Animal will be under the Animals collection), and assign "Dog" as a default value for `type` for all `Dog` models
+// We use an underscore as the last character to add `type: "Dog"` - to the "Default Criteria" - this means that all data retrieval methods will automatically 
+// add `type:"Dog"` to their find queries.
+const Dog = Animal.derive({ type_:"Dog" });
+
+// Get all Dogs
+Dog.getAll().then(dogs=> {
+   // Got all dogs here.
+});
+
 ### Static methods
 In Mongoose you define statics by extending the statics object of schemas.
 In Derive, you can define static methods by simply defining them on a subclass of a Model class. e.g.:
