@@ -151,7 +151,6 @@ The `options` can contain these key:value arguments:
 * `defaultMethodsLog`: when set to `true` - the default class methods for database/data events (`_inserted()`, `_isDuplicate()`, `_error()` and `changed()` will run a relevant `console.log`, see [Database persistence callbacks](#database-persistence-callbacks) for more information about these methods).
 * `dbOptions`: You can use this to override the default [MongoDB driver connection options](https://mongodb.github.io/node-mongodb-native/3.5/reference/connecting/connection-settings/). Note that these are the options passed by default:
 ```json
-w:1, 
 native_parser:true, 
 forceServerObjectId:true,
 // New in 3.X Mongo engine
