@@ -9,7 +9,7 @@ describe the schema. Moongose enforce the usage of **strictly typed** data types
 You may use "default values" in the schema definition in Derive, and they can also be treated as "data type hints" (e.g. a default value of an empty string hints a string value, 
 a default numerical hints a number value, and so on...)
 
-### Model instances
+### Model Instances
 In Mongoose, you first define a schema and create an instance of a `Schema` object, and then create a model, by passing a collection name and the schema object -- then you can create
 data instances from the model.
 In Derive this is done in a single step: You use a `Model` function, passing it a model definition (a "schema"), and a name - you get back a class (connected to the DB, 
@@ -18,7 +18,7 @@ this is what Mongoose calls "documents" - as to make them equivalent to Mongo's 
 ### Ids
 Both frameworks automatically save documents with an `_id`_ property (of type `ObjectID`). Derive does not allow overrding the default `_id` property, and doing so by adding it to the model definition may yield unexpected results. If you need to use your own `id`, define a different id property (e.g. `_ID`).
 
-### Instance methods
+### Instance Methods
 In Mongoose you can add "user-defined" methods by adding them to the `methods` property of a schema.
 In Derive there are two ways: you can directly define instance methods on the model definition, or you can extend a Model class, and define new methods on it.
 
@@ -55,9 +55,6 @@ dog.findSimilarTypes().then(dogs=> {
 ```
 
 However, a suggested and *prefered* way in Derive to achieve the above, might be to use the `derive` method, to define a new "derived" data object, with a default criteria with `type: "Dog"`, for example:
-
-##### Derive a data model
-One of Derive'js powerful features is the ability to create "sub-models" associated with the same collection as a "super-model", using the [derive](#going-further-extending-and-deriving-models) method, which, together with the [`$DefaultCriteria`](#defaultcriteria) modifier, can be used to create meaningful data "inheritance":
 
 ```javascript
 // Define Animal data model
