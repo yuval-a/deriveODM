@@ -520,7 +520,7 @@ if (process.argv[2] == "--remodel") {
 
 ## Going Further - Extending and Deriving Models
 
-One of Derive'js powerful features is the ability to create "sub-models" associated with the same collection as a "super-model", using the [derive](#going-further-extending-and-deriving-models) method, which, together with the [`$DefaultCriteria`](#defaultcriteria) modifier, can be used to create meaningful data "inheritance":
+One of Derive's powerful features is the ability to create "sub-models" associated with the same collection as a "super-model", using the [derive](#going-further-extending-and-deriving-models) method, which, together with the [`$DefaultCriteria`](#defaultcriteria) modifier, can be used to create meaningful data "inheritance":
 
 ```javascript
 // Define Animal data model
