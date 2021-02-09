@@ -41,7 +41,8 @@ This document is a reference, describing all methods and functions available whe
 ## Modules
 ### `Model(options)`  
 The `Model` module is the only module available in Derive. You call it as a function, passing it an object with options, and it returns a promise that resolves with the 
-`Model` *function* - which you can use to define data models.
+`Model` *function* - which you can use to define data models. <br>
+Starting with version 1.6 -- you may also use the alias `Connect` instead of `Model` (to avoid confusion with the `Model` *function*).
 
 ### Returns
 `Model` resolves with the `Model` function which can be used to define data models and receive data classes.
@@ -114,8 +115,8 @@ This is the name of the collection. You can use a singular name, and Derive will
 as the name - the collection name will be `Persons`.
 
 #### `syncInterval` 
-This sets the interval time, in milliseconds between calls to the DB. Every interval the engine sends a queue of data operations to the DB, to be performed.
-*Default: 1000ms* (1 second).
+This sets the interval time, in milliseconds between calls to the DB. Every interval the engine sends a bulk queue of data operations to the DB, to be performed.
+*Default: 0* (the calls are made within a `setImmediate` function).
 
 ### Returns
 Calling the Model function returns a "data class" - which is a special proxied JS class, tapped to a DB collection, and containing several static methods related to DB operations, 
@@ -247,7 +248,7 @@ using MongoDB query-format.
 The name of the index to map by. Note that it **must** be unique, otherwise some results will override others.
 ###### `returnArray`
 If set to true, will return the results as an array, otherwise will return an object (defaults to an object).
-####### `limit`
+###### `limit`
 Pass a number to limit the number of returned results (default: 0, which means unlimited).
 ###### `skip`
 Pass a number to skip this amount of results and start at a certain offset (default: 0, which means unlimited).

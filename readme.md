@@ -1,11 +1,13 @@
 
+[Summary](https://yuval.hashnode.dev/derivejs-a-reactive-odm-object-data-mapper-framework-for-mongodb-and-nodejs-ckfspl31f02ryv6s1asqy6wvh) | [Reference](https://github.com/yuval-a/derivejs/blob/master/reference.md) | [Comparison to Mongoose](https://github.com/yuval-a/derivejs/blob/master/mongoose-derive-migration.md) | [Demonstration](https://github.com/yuval-a/spaceships-derivejs-demo)
+
 ## Introduction
 **DeriveJS** lets you manipulate and create Javascript data objects, while **automatically** and **transparently** persisting and updating them on a database (such as MongoDB), in the background, without any additional hassle or code.
 
-It wraps your data classes and objects with [Javascript Proxies](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy), "tapping-in" to native operations such as creating instances (using the normal `new` operator), and updating property values (using the normal assignment operator `=`), and then handling passing database calls to the database in the background, while leveraging MongoDB's bulk operations capabilities in a smart way, to save unnecessary calls to the db engine,
+It wraps your data classes and objects with [Javascript Proxies](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy), "tapping-in" to native operations such as creating instances (using the normal `new` operator), and updating property values (using the normal assignment operator `=`), and then handling passing database calls to the database in the background, while leveraging MongoDB's bulk operations capabilities in a smart way, to save unnecessary calls to the DB engine,
 and running bulk operations in fixed (settable) intervals. The background engine is mostly handled transparently by a module called `SyncManager`.
 
-**Note**: this is a complete technical reference, if you'd to read a less verbose introduction, you can read [this article on Hashnode](https://yuval.hashnode.dev/derivejs-a-reactive-odm-object-data-mapper-framework-for-mongodb-and-nodejs-ckfspl31f02ryv6s1asqy6wvh)
+**Note**: this is a complete technical reference, if you'd like to read a less verbose introduction, you can read [this article on Hashnode](https://yuval.hashnode.dev/derivejs-a-reactive-odm-object-data-mapper-framework-for-mongodb-and-nodejs-ckfspl31f02ryv6s1asqy6wvh)
 
 ## Table of Contents
   * [Introduction](#introduction)
@@ -17,6 +19,7 @@ and running bulk operations in fixed (settable) intervals. The background engine
     * [Create an Instance](#create-an-instance)
     * [Manipulate Properties](#manipulate-properties)
     * [Call Instance Functions](#call-instance-functions)
+    * [Derive a data model](#derive-a-data-model)
   * [Getting Started](#getting-started)
     + [Defining a Data Model](#defining-a-data-model)
   * [Going deeper](#going-deeper)
@@ -37,7 +40,7 @@ and running bulk operations in fixed (settable) intervals. The background engine
           - [`$Listen`](#listen)
     + [Unique Indexes](#unique-indexes)
     + [The `remodel` Method](#the-remodel-method)
-  * [Going Further - Extending and Deriving Models](#going-further-extending-and-deriving-models)
+  * [Going Further - Extending and Deriving Models](#going-further---extending-and-deriving-models)
   * [Retrieving Data From a Database](#retrieving-data-from-a-database)
     + [`get`](#getwhich)
     + [`getAll`](#getallwhich-sortby-limit0-skip0)
@@ -81,9 +84,10 @@ It only takes a few easy steps:
 
 ##### Define a data model
 ```javascript
-var User = Model({
+const User = Model({
     _email$: "",
     _name: "",
+    role:"editor", // default role for a user object
     age: null,
     password: null,
     setPassword(pass) {
@@ -97,7 +101,7 @@ The first time you define it, a `Users` collection is defined on the database, w
 
 ##### Create an instance
 ```javascript
-var user = new User ("someemail@mail.com","Someone Somebody");
+let user = new User ("someemail@mail.com","Someone Somebody");
 ```
 There will now be a new document in the `Users` collection, having "`someemail@mail.com`" as the `_email` and "`Someone Somebody`" as the `_name`.
 
@@ -108,12 +112,22 @@ user.age = 30;
 
 The document will now have the value `30` set to its `age` property.
 
-##### Call instance functions:
+##### Call instance functions
 ```javascript
 user.setPassword("plaintextpassword");
 ```
 
-And so on...
+##### Derive a data model
+One of the powerful features of Derive, is the ability to ["extend" data models](#going-further---extending-and-deriving-models), while having the "sub-models" share the same collection as their "super-models" - this, together with the ["Default Criteria" feature](#defaultcriteria) can enable meaningful "data inheritance".
+
+```javascript
+const Admin = 
+   User.derive({
+   	role_: "admin"
+   });
+
+let admin = new Admin("admin@mail.com", "Admin Name");
+```
 
 With `DeriveJS` you can create and manipulate a large amount of data objects, and know that they will be persisted in the database, efficiently and in a short time.
 
@@ -138,7 +152,6 @@ The `options` can contain these key:value arguments:
 * `defaultMethodsLog`: when set to `true` - the default class methods for database/data events (`_inserted()`, `_isDuplicate()`, `_error()` and `changed()` will run a relevant `console.log`, see [Database persistence callbacks](#database-persistence-callbacks) for more information about these methods).
 * `dbOptions`: You can use this to override the default [MongoDB driver connection options](https://mongodb.github.io/node-mongodb-native/3.5/reference/connecting/connection-settings/). Note that these are the options passed by default:
 ```json
-w:1, 
 native_parser:true, 
 forceServerObjectId:true,
 // New in 3.X Mongo engine
@@ -162,7 +175,11 @@ derive.Model
 );
 ```
 
-NEW: starting with version 1.6.0 you may use the `Connect` module function (`derive.Connect`) instead of `Model` (`derive.Model`), which is exactly the same as `Model`, and is used as an alias (both reference the same module) - and was added to avoid confusion between the resolved `Model` function (the function you use to define data models) and the **module** `Model` function (the function which is used to connect to the database and resolve with the `Model` function).
+NEW: starting with version 1.6.0 you may use the `Connect` module function (`derive.Connect`) instead of `Model` (`derive.Model`), which is exactly the same as `Model`, and is used as an alias (both reference the same module) - and was added to avoid confusion between the resolved `Model` function (the function you use to define data models) and the **module** `Model` function (the function which is used to connect to the database and resolve with the `Model` function), so the second line above could be:
+```javascript
+derive.Connect
+```
+as well.
 
 ### Defining a Data Model
 Once the promise resolves successfully, you have access to the `Model` function, which can be used to define a "Data Model", by passing an object literal as an argument, describing the data properties and their default values (as well as some instance methods, when needed). The `Model` function returns a **`class`** "representing" that data model, and its functionality (as mentioned, that class is a special "proxied" class that comes with some built-in stuff in it, to handle database persistence, and offer some static and default instance methods which will be described below).
@@ -188,20 +205,20 @@ Notice that some properties were defined with an underscore, and some are upperc
 ### Modifiers
 You can use some special characters in the property names (called "*Modifiers*"), that will define certain characteristics of those properties:
 
-* `_` (start) when used as the **first** character of a property, will mark it as an **`index`**. Other than being defined as an index inside MongoDB, an index is also always setabble from the model class **constructor**. 
+* `_` (start) - **Index**: When used as the **first** character of a property, will mark it as an **`index`**. Other than being defined as an index inside MongoDB, an index is also always setabble from the model class **constructor**. 
 *Notes*: The order of the indexes defined, matters - as this will also be the order of the arguments in the constructor. Furthermore - the order affects which index is considered as the ["Main Index"](#main-index). Also note, that the property name **does** include the underscore character. 
 Example: `_name`;
 
-* `$` (last) When used as the **last** character of an **index** property, that index will be set as a *unique* index (using the same value for unique indexes will yield an error).
+* `$` (last) - **Unique Index**: When used as the **last** character of an **index** property, that index will be set as a *unique* index (using the same value for unique indexes will yield an error).
 Example: `_name$`, will define a *unique index* called `_name` (notice - the `$` char at the end of the property name will be removed, and will **not** be defined as part of the name).
 
-* `ALL_UPPERCASE`, when a property name is defined with all capital letters, it will be marked as **read-only**. If you try to set the value of a read-only property (using the `=` operator) - you will get an error message. Note, that if you also define a read-only property as an *index*, like in the above example - that property will **still** be settable via the constructor arguments (but **not** from anywhere else).
+* `ALL_UPPERCASE` - **Read Only**: When a property name is defined with all capital letters, it will be marked as **read-only**. If you try to set the value of a read-only property (using the `=` operator) - you will get an error message. Note, that if you also define a read-only property as an *index*, like in the above example - that property will **still** be settable via the constructor arguments (but **not** from anywhere else).
 
-* `$` (start) - Putting the Dollar sign as the **first** character of a property name - will define it as a "**meta**" property (aka a "secret" property). A meta property will **not** be considered as part of the data structure of the model - it and its value will **not** be persisted on the database. If you iterate over the values of the data instance - it will **not** appear (it won't be enumerable). But you may **still** get and set its value locally. This is useful for saving some additional information that you only need locally, and does not require persistence on the database server. These can also be used to reference callback functions, as demonstrated later-on.<br>
+* `$` (start) - **Meta Property** Putting the Dollar sign as the **first** character of a property name - will define it as a "**meta**" property (aka a "secret" property). A meta property will **not** be considered as part of the data structure of the model - it and its value will **not** be persisted on the database. If you iterate over the values of the data instance - it will **not** appear (it won't be enumerable). But you may **still** get and set its value locally. This is useful for saving some additional information that you only need locally, and does not require persistence on the database server. These can also be used to reference callback functions, as demonstrated later-on.<br>
 There are also, in-fact, four "built-in" meta properties,  two are automatically created for each object:
 one is`$_ModelInstance` which always equal to `true`, and is used internally when setting a DeriveJS object value  to an instance of another DeriveJS object (in which case it will be saved as a DBRef object), and the other meta property is [`$DefaultCriteria`](#defaultcriteria) (which is explained later). The third one is [`$Listen`](#listen), and is not created automatically but can be defined as an array of property names that you want their value-changes to be "listened" to (as explained in "[Listening for changes](#listening-for-local-changes)"). The 4th one is (`$_BARE`)[#$bare] which contains the "raw" (unproxified) document. Setting the values of the $_BARE object - will **not** affect the database.
 
-* `_` (end) - Using a `_` character as the **last** character in the end of a property name, will add the property **and** its value to the [`$DefaultCriteria`](#defaultcriteria) object, (note, the last `_` will be omitted from the property name). 
+* `_` (end) - **Default Criteria**: Using a `_` character as the **last** character in the end of a property name, will add the property **and** its value to the [`$DefaultCriteria`](#defaultcriteria) object, (note, the last `_` will be omitted from the property name). 
 If using both last `_` and last `$` (i.e. setting both a unique index and a default-criteria value, make sure the `_` is the **last** character, and the `$` is one before it).
 
 Having obtained our data class, we can create object instances of it:
@@ -503,6 +520,35 @@ if (process.argv[2] == "--remodel") {
 
 ## Going Further - Extending and Deriving Models
 
+One of Derive's powerful features is the ability to create "sub-models" associated with the same collection as a "super-model", using the [derive](#going-further-extending-and-deriving-models) method, which, together with the [`$DefaultCriteria`](#defaultcriteria) modifier, can be used to create meaningful data "inheritance":
+
+```javascript
+// Define Animal data model
+const Animal = Model({
+   // The underscore denotes this property as an index
+   _name:"", 
+   type:"", 
+}, "Animal");
+
+/* 
+ * Define a "derived" Dog data model (both Dog and Animal will be under the Animals collection), 
+ * and assign "Dog" as a default value for `type` for all `Dog` models.
+ * We use an underscore as the last character to add `type: "Dog"` - to the "Default Criteria" - 
+ * this means that all data retrieval methods will automatically add `type:"Dog"` to their find queries.
+ */
+const Dog = Animal.derive({ type_:"Dog" });
+
+// The new data object and document (Ubu) will also automatically have `type: "Dog"` associated with it.
+let ubu = new Dog("Ubu");
+
+// Get all Dogs
+Dog.getAll().then(dogs=> {
+   // Got all dogs here.
+});
+```
+
+Going back to our "Spaceships":
+
 Let's define a "sub-type" of `Spaceship`, we'll call it a `Battleship`, and we'll also add a property to hold its weapons.
 If we do it like this (note, this is the WRONG way):
 
@@ -546,7 +592,8 @@ class Battleship extends Spaceship
 var bship = new Battleship("The Destroyer");
 ```
 
-The `derive` method returns a new Model Class (*not* a subclass of the original Model class) - that uses the **same** existing database synchronization engine (SyncManager), that is already running for the parent model class (So the `Battleship` class will use the SyncManager of the `Spaceship` class, which is associated with the `Spaceships` Mongo collection).
+The `derive` method returns a new Model Class (*not* a subclass of the original Model class) - that shares the same collection as its "parent" data model (so both will 
+be part of the `Spaceships` collection, and both will use the same existing database synchronization engine (SyncManager).
 
 It is also possible to "override" properties and values in the derived model, and so we can simply "override" the `_TYPE` property in the derived model, and
 set its default value to "`Battleship`". There won't even be a need for a subclass in this case:
@@ -564,7 +611,6 @@ You **may** define new indexes - and only objects instances of the derived class
 are always defined with the `sparse:true` property on the Mongo DB.
 
 You can read more about indexes and how they are managed in deriveJS [here](#indexes-and-how-they-are-handled-in-the-Mongo-server)
-
 
 ## Retrieving data from a database
 You will often want to "restore" existing database objects from data collections and populate your local ones with the persisted data. 

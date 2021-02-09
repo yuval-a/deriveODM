@@ -30,9 +30,10 @@ module.exports = function(options) {
                             var propDescrp = Reflect.getOwnPropertyDescriptor(target, property);
                             // If property not defined in model
                             if (!propDescrp) {
+                                // Commented out as this triggers on 'sub properties' which don't have a property descriptor
                                 // Invoke the _error method on the object instance
-                                target._error ("Trying to set unknown property: "+property+" (property value is left unchanged).");
-                                return true;
+                                // target._error ("Trying to set unknown property: "+property+" (property value is left unchanged).");
+                                // return true;
                             }
                             else {
                                 // Readonly
