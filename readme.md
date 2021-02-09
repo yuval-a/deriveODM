@@ -19,6 +19,7 @@ and running bulk operations in fixed (settable) intervals. The background engine
     * [Create an Instance](#create-an-instance)
     * [Manipulate Properties](#manipulate-properties)
     * [Call Instance Functions](#call-instance-functions)
+    * [Derive a data model](#derive-a-data-model)
   * [Getting Started](#getting-started)
     + [Defining a Data Model](#defining-a-data-model)
   * [Going deeper](#going-deeper)
