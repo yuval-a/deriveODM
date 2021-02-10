@@ -195,7 +195,7 @@ var Spaceship = Model({
 ```
 
 Now `Spaceship` is a `class` you can create new object instances of.
-The second argument for the `Model` function is a name, that will be used for both the class name, and the collection name (where an `s` will be added to, to signify "plural" form; So the collection name will be `Spaceships` in this case). There is an additional optional argument, that can set the "sync interval" duration, the amount of time between each interval where the SyncManager class instance runs the database bulk operations stacked since the last sync. The default is 1000ms (1 second).
+The second argument for the `Model` function is a name, that will be used for both the class name, and the collection name (where an `s` will be added to, to signify "plural" form; So the collection name will be `Spaceships` in this case). There is an additional optional argument, that can set the "sync interval" duration, the amount of time between each interval where the SyncManager class instance runs the database bulk operations stacked since the last sync. The default is 0, and the call is made using `setImmediate` to avoid "clogging" Node's Event Loop (Note: prior to version 2.0.0, the default was 1000 ms).
 (The Model function also have two additional arguments `_syncer`, and `_proxy`, used internally and that shouldn't be used).
 
 Notice that some properties were defined with an underscore, and some are uppercase. This is **intentional**, and meaningful. These are called "*Modifiers*" and are explained in the next section.
