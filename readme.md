@@ -279,21 +279,21 @@ the `_created` method will be called **before** the extended class constructor f
 So, for example with the following:
 
 ```javascript
-    var Spaceship = Model({
-        _name: "",
-    }, "Spaceship");
+var Spaceship = Model({
+   _name: "",
+}, "Spaceship");
 
-    class Ship extends Spaceship {
-        constructor (_name) {
-            super(_name);
-            console.log (_name+" called from constructor");
-        }
-        _created() {
-            console.log (this._name+" called from _created");
-        }
-    }
+class Ship extends Spaceship {
+   constructor (_name) {
+      super(_name);
+      console.log (_name+" called from constructor");
+   }
+   _created() {
+      console.log (this._name+" called from _created");
+   }
+}
 
-    var ship = new Ship("a new ship");
+var ship = new Ship("a new ship");
 ```
 You will first see the `console.log` message from the `_created` and *then* the message from the (extended class) constructor.
 After a short while, when the document is inserted on the DB - you will see messages logged from the `_inserted` method (if a `console.log` was defined there and `debugMode` was defined with `true` when initializing the `Model` module).
