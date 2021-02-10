@@ -206,7 +206,7 @@ Notice that some properties were defined with an underscore, and some are upperc
 You can use some special characters in the property names (called "*Modifiers*"), that will define certain characteristics of those properties:
 
 * `_` (start) - **Index**: When used as the **first** character of a property, will mark it as an **`index`**. Other than being defined as an index inside MongoDB, an index is also always setabble from the model class **constructor**. 
-*Notes*: The order of the indexes defined, matters - as this will also be the order of the arguments in the constructor. Furthermore - the order affects which index is considered as the ["Main Index"](#main-index). Also note, that the property name **does** include the underscore character. 
+*Notes*: The order of the indexes defined, matters - as this will also be the order of the arguments in the constructor. Furthermore - the order affects which index is considered as the ["Main Index"](#mainindex). Also note, that the property name **does** include the underscore character. 
 Example: `_name`;
 
 * `$` (last) - **Unique Index**: When used as the **last** character of an **index** property, that index will be set as a *unique* index (using the same value for unique indexes will yield an error).
