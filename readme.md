@@ -747,7 +747,7 @@ Therefore - if you override the constructor and have any code that affects or ch
 
 ### `$DefaultCriteria`
 
-All model classes has a "static" property - `$DefaultCriteria`, this is an object containing key-value pairs that will be added by default to database queries, when calling one of the `get` methods, using a primitive value as an argument. This is useful when creating derived or extended classes, and not wanting to include objects from the super-classes in query results. It will be more clear with an example:
+All model classes have a "static" (meta) property - `$DefaultCriteria`, this is an object containing key-value pairs that will be added by default to database queries, when calling one of the `get` methods, using a primitive value as an argument. This is useful when creating derived or extended classes, and not wanting to include objects from the super-classes in query results. It will be more clear with an example:
 
 Returning to our Spaceship example, we define a `Spaceship` super-model, as before:
 
