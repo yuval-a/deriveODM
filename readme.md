@@ -87,7 +87,7 @@ It only takes a few easy steps:
 const User = Model({
     _email$: "",
     _name: "",
-    role:"editor", // default role for a user object
+    role:"editor", // set a default role for a User object
     age: null,
     password: null,
     setPassword(pass) {
