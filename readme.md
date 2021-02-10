@@ -754,11 +754,11 @@ All model classes have a "static" (meta) property - `$DefaultCriteria`, this is 
 Returning to our Spaceship example, we define a `Spaceship` super-model, as before:
 
 ```javascript
-    var Spaceship = Model({
-        _name$: "",
-        TYPE: "",
-        crew: [],
-    }, "Spaceship");
+var Spaceship = Model({
+    _name$: "",
+    TYPE: "",
+    crew: [],
+}, "Spaceship");
 ```
 
 Then we define a sub-model of `Spaceship`: `Battleship`
@@ -1177,17 +1177,17 @@ new Promise(async (resolve, reject)=> {
 
 Then we can implement the `log` function, for example on a `Spaceship` model:
 
-```javascript        
-    var Spaceship = Model({
-        _name: "",
-        _TYPE: "",
-        crew: []
-    }, "Spaceship");
+```javascript
+var Spaceship = Model({
+    _name: "",
+    _TYPE: "",
+    crew: []
+}, "Spaceship");
 
-    let Logger = await require('./Logger')();
-    Spaceship.use(Logger);
+let Logger = await require('./Logger')();
+Spaceship.use(Logger);
 
-    let ship = new Spaceship("The Logger").log("The Logger ship created");
+let ship = new Spaceship("The Logger").log("The Logger ship created");
 ```
 
 Notice that in this example - we create a **separate* connection to the DB, for the Logs collection - 
