@@ -655,11 +655,12 @@ You can use the static `mainIndex` method to get the name of the main index, as 
 
 ```javascript
 const Spaceship = Model({
-	_name: "",
-	_TYPE: "",
-	_inserted() {
-	   console.log ("Mention the value of this instance's main index: " + this[Spaceship.mainIndex()]);
-	}
+    _name: "",
+    _TYPE: "",
+    _inserted() {
+       console.log ("Mention the value of this instance's main index: " + this[Spaceship.mainIndex()]);
+    }
+}, "Spaceship");
 ```
 
 ### `which` Argument
