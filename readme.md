@@ -149,7 +149,7 @@ The `options` can contain these key:value arguments:
 * `dbUrl`: the MongoDB server connection url, as a string. Default: "`mongodb://localhost:27017/`".
 * `dbName`: the name of the database, as a string. Default: "`deriveDB`".
 * `debugMode`: A boolean. If set to true - will display some real-time internal DB-related `SyncManager` information - such as when it is locked for operation (before running bulk database operations), or unlocked, when running bulk inserts/updates, and more... Default: `true` (!)
-* `defaultMethodsLog`: when set to `true` - the default class methods for database/data events (`_inserted()`, `_isDuplicate()`, `_error()` and `changed()`) will run a relevant `console.log`, see [Database persistence callbacks](#database-persistence-callbacks) for more information about these methods).
+* `defaultMethodsLog`: when set to `true` - the default class methods for database/data events (`_inserted()`, `_isDuplicate()`, `_error()` and `changed()`) will run a relevant `console.log`, see [Database persistence callbacks](#database-persistence-callbacks) for more information about these methods.
 * `dbOptions`: You can use this to override the default [MongoDB driver connection options](https://mongodb.github.io/node-mongodb-native/3.5/reference/connecting/connection-settings/). Note that these are the options passed by default:
 ```json
 native_parser:true, 
