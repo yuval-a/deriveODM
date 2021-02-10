@@ -443,22 +443,23 @@ var Spaceship = Model({
 Once the engine modifies the `_name` index to make it unique, if there are records with duplicate `_name` values - Mongo will throw an **error**, and the unique index will **not** be defined. You will need to take care of the duplicates yourself for it to successfully be defined. You can either issue a relevant `.remove` command from the mongo console, or you can also use the static `clear()` method on the `Spaceship` class. The `clear` method can accept a "find query" filter as an argument (e.g. `{_name:"The Beyond"}`). So, for example if you have several ships named "`The Beyond`" and you want to define a unique constraint on `_name` and create a new, single `"The Beyond"` ship, then you can use:
 
 ```javascript
-    await Model({},"Spaceship").clear({_name:"The Beyond"});
-    var Spaceship = Model({
-        _name$: "",
-        _TYPE: "",
-        crew: [],
-    }, "Spaceship");
-        
-    var ship = new Spaceship ("The Beyond");
+await Model({},"Spaceship").clear({_name:"The Beyond"});
+var Spaceship = Model({
+    _name$: "",
+    _TYPE: "",
+    crew: [],
+}, "Spaceship");
+
+var ship = new Spaceship ("The Beyond");
 ```
+
 The first line is just for getting a reference to the `Spaceships` collection, to call `clear` to remove all "`The Beyond`" ships, then we can define the model with the new constraint, and create a new unique ship.
 
 At this point we have the `_name` index defined as a unique index -- there can't be more than one object with the same `_name` value. Let's see what happens when we
 try to create two Spaceships with the same name:
 ```javascript
-    var ship1 = new Spaceship ("The Boldly Go","A");
-    var ship2 = new Spaceship ("The Boldly Go","B");
+var ship1 = new Spaceship ("The Boldly Go","A");
+var ship2 = new Spaceship ("The Boldly Go","B");
 ```
 
 We will get a message on the console:
@@ -480,11 +481,11 @@ You may also "disable" an index - redefine it as a "normal" property - to do so,
 Suppose we want to unindex the `_TYPE` property, we can define our model as:
 
 ```javascript
-    var Spaceship = Model({
-        _name$: "",
-        TYPE: "",
-        crew: [],
-    }, "Spaceship" );
+var Spaceship = Model({
+    _name$: "",
+    TYPE: "",
+    crew: [],
+}, "Spaceship" );
 ```
 
 **However** - any past documents in our database collection, will *still* have the old `_TYPE` property in them. 
