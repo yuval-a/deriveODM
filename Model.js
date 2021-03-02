@@ -44,7 +44,7 @@ module.exports = function(options) {
                                 else if (! (property.indexOf('$')===0)) {
                                     let callback  = false;
                                     let localOnly = false;
-                                    if (typeof value === "object" && "$value" in value) {
+                                    if (value != null && typeof value === "object" && "$value" in value) {
                                             /*
                                             if (!"$callback" in value) {
                                                 target._error ("Must use $callback when using object assignment with $value. $callback not found!");
