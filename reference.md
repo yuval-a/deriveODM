@@ -16,7 +16,9 @@ This document is a reference, describing all methods and functions available whe
     + [Data Retrieval Methods](#data-retrieval-methods)
       - [`get`](#getwhich)
       - [`getAll`](#getallwhich-sortby-limit0-skip0)
+      - [`getAllRead`](#getallreadwhich-sortby-limit0-skip0)
       - [`map`](#mapwhich-index-returnarray-limit0-skip0)
+      - [`mapRead`](#mapreadwhich-index-returnarray-limit0-skip0)
       - [`has`](#haswhich-returndocument)
       - [`count`](#countwhich)
       - [`join`](#joinwhichjoinwithlocalfieldforeignfieldjoinasreturnasmodelfalse)
@@ -238,6 +240,10 @@ Pass a number to skip this amount of results and start at a certain offset (defa
 ##### Returns
 A promise that resolves with an array of data objects if succesful, or rejects with an error if failed.
 
+#### `getAllRead(which, sortBy, limit=0, skip=0)`
+Similar to [`getAll`](#getallwhich-sortby-limit0-skip0), only returns "raw" Mongo documents, instead of proxied Derive objects. 
+Use for the purpose of read-only data.
+
 #### `map(which, index, returnArray, limit=0, skip=0)`
 Map returns an object, or an array, where keys are values of a selected index, and the values are retrieved data objects.
 ##### Arguments
@@ -254,6 +260,10 @@ Pass a number to limit the number of returned results (default: 0, which means u
 Pass a number to skip this amount of results and start at a certain offset (default: 0, which means unlimited).
 ##### Returns
 A promise that resolves with an object or array of data objects, mapped using the index name passed in `index`, if succesful, or rejects with an error if failed.
+
+#### `mapRead(which, index, returnArray, limit=0, skip=0)`
+Similar to [`map`](#mapwhich-index-returnarray-limit0-skip0), only returns "raw" Mongo documents, instead of proxied Derive objects. 
+Use for the purpose of read-only data.
 
 #### `has(which, returnDocument)`
 Used to check if a certain document/data object exist in the collection

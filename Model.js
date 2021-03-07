@@ -536,6 +536,32 @@ module.exports = function(options) {
                             });
                         });
                     }
+
+                    static getAllRead(which,sortBy,limit=0,skip=0) {
+                        return new Promise( (resolve,reject)=> {
+                            var criteria = Object.assign({},ModelClass.$DefaultCriteria);
+                            if (which) {
+                                if (typeof which === "object")
+                                    Object.assign (criteria, which);
+                                else 
+                                    criteria[MainIndex] = which;
+                            }
+
+                            let sort = ( sortBy ? sortBy : {MainIndex:-1} );
+                            var allDocs;
+
+                            if (!criteria) reject("getAll: invalid criteria! (Does collection " + this.collectionName + " exists?)");
+                            allDocs = syncManager.collection.find(criteria,{
+                                sort:sort,
+                                skip:skip,
+                                limit:limit
+                            }).toArray()
+                            .then(allDocs=> {
+                                resolve(allDocs);
+                            });
+                        });
+                    }
+
                     
                     static map(which, index, returnArray, limit=0, skip=0) {
                         return new Promise( (resolve,reject)=> {
@@ -558,6 +584,27 @@ module.exports = function(options) {
                                     allmap[doc[index]] = new this();
                                 });
                                 resolve (allmap);
+                            });
+                        });
+                    }
+
+                    static mapRead(which, index, returnArray, limit=0, skip=0) {
+                        return new Promise( (resolve,reject)=> {
+                            var criteria = Object.assign({},ModelClass.$DefaultCriteria);
+                            if (which) {
+                                if (typeof which === "object")
+                                    Object.assign (criteria, which);
+                                else 
+                                    criteria[MainIndex] = which
+                                
+                            }
+                            
+                            if (!index) index = MainIndex;
+                            var allmap, allDocs;
+                            allmap = (returnArray ? [] : {});
+                            allDocs = syncManager.collection.find(criteria, {skip, limit}).toArray()
+                            .then(alldocs=> {
+                                resolve (alldocs);
                             });
                         });
                     }
@@ -710,7 +757,7 @@ module.exports = function(options) {
                         });
                     }
 
-                    static has(which,returnDocument) {
+                    static has(which, returnDocument) {
                         return new Promise ( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
                             if (which) {

@@ -44,7 +44,9 @@ and running bulk operations in fixed (settable) intervals. The background engine
   * [Retrieving Data From a Database](#retrieving-data-from-a-database)
     + [`get`](#getwhich)
     + [`getAll`](#getallwhich-sortby-limit0-skip0)
+    + [`getAllRead`](#getallreadwhich-sortby-limit0-skip0)
     + [`map`](#mapwhich-index-returnarray-limit0-skip0)
+    + [`mapRead`](#mapreadwhich-index-returnarray-limit0-skip0)
     + [`has`](#haswhich-returndocument)
     + [`count`](#countwhich)
     + [`MainIndex`](#mainindex)
@@ -629,9 +631,19 @@ Returns **all** (with an optional filter query) object instances (in an array). 
 * `limit` - to limit the number of returned results (default is `0`, which is unlimited). 
 * `skip` to specify an offset index for retrieved results (default is `0`).
 
+### `getAllRead(which, sortBy, limit=0, skip=0)`
+This function is idential to [`getAll`](#getallwhich-sortby-limit0-skip0), only it returns "raw" Mongo documents, and **not** Derive data objects. 
+As with `getAll` there are some performance degradation when retrieving a large amount of documents, as a new instance is created for each, 
+if you only need to retrieve data for read only purposes, you may use `getAllRead` instead. Remember that the returned documents will **not** be reactive.
+
 ### `map(which, index, returnArray, limit=0, skip=0)` 
 `map` returns **all** (with an optional filter query) object instances mapped by an index as an object, or as an array (according to the third boolean argument `returnArray`). The second argument `index` lets you set the index name that will be used for the mapping (set as null to use the default `MainIndex`). 
 The 4th and 5th arguments are `limit` and `skip` that allows you to get only some of the documents.
+
+### `mapRead(which, index, returnArray, limit=0, skip=0)`
+This function is idential to [`map`](#mapwhich-index-returnarray-limit0-skip0), only it returns "raw" Mongo documents, and **not** Derive data objects. 
+As with `map` there are some performance degradation when retrieving a large amount of documents, as a new instance is created for each, 
+if you only need to retrieve data for read only purposes, you may use `mapRead` instead. Remember that the returned documents will **not** be reactive.
 
 ### `has(which, returnDocument)` 
 Returns a boolean indicating if a database collection contains certain value(s). The second `returnDocument` is a boolean - if the document exist and this argument is set to `true` -
