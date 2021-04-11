@@ -198,8 +198,6 @@ var SyncManager = {
                             this.BULK = {
                                 inserts: {},
                                 updates: [],
-                                // keys are ids, in each id kes are property names, then value is an array of callback functions
-                                updateCallbacks: {}
                             }
 
                             // Make sure the collection exist - create it if it doesn't. This is new in version 0.1.1
