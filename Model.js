@@ -575,9 +575,9 @@ module.exports = function(options) {
                             }
                             
                             if (!index) index = MainIndex;
-                            var allmap, allDocs;
+                            var allmap;
                             allmap = (returnArray ? [] : {});
-                            allDocs = syncManager.collection.find(criteria, {skip, limit}).toArray()
+                            syncManager.collection.find(criteria, {skip, limit}).toArray()
                             .then(alldocs=> {
                                 alldocs.forEach(doc=> {
                                     modelGet = doc;
@@ -600,11 +600,14 @@ module.exports = function(options) {
                             }
                             
                             if (!index) index = MainIndex;
-                            var allmap, allDocs;
+                            var allmap;
                             allmap = (returnArray ? [] : {});
-                            allDocs = syncManager.collection.find(criteria, {skip, limit}).toArray()
+                            syncManager.collection.find(criteria, {skip, limit}).toArray()
                             .then(alldocs=> {
-                                resolve (alldocs);
+                                alldocs.forEach(doc=> {
+                                    allmap[doc[index]] = doc;
+                                });
+                                resolve (allmap);
                             });
                         });
                     }
