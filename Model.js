@@ -626,6 +626,7 @@ module.exports = function(options) {
                                     criteria[MainIndex] = which;
                             }
                             syncManager.collection.aggregate([
+                                { $match: criteria },
                                 {
                                     $lookup:
                                     {
@@ -636,10 +637,7 @@ module.exports = function(options) {
                                     }
 
                                 },
-                                { $unwind : "$"+joinAs },
-                                {
-                                    $match: criteria
-                                }
+                                { $unwind : "$"+joinAs }
                             ], async function (err, cursor) {
                                 if (err) {
                                     console.log ("join error:",err);
@@ -676,7 +674,9 @@ module.exports = function(options) {
                                     criteria[MainIndex] = which;
                             }
                             let sort = ( findOpts && findOpts.sortBy ? findOpts.sortBy : {MainIndex:-1} );
-                            let aggregate = [{
+                            let aggregate = [
+                            { $match: criteria },
+                            {
                                 $lookup:
                                 {
                                     from: joinOpts.joinWith,
@@ -686,7 +686,6 @@ module.exports = function(options) {
                                 }
                             },
                             { $unwind : "$"+joinOpts.joinAs },
-                            { $match: criteria },
                             { $sort: sort }];
 
                             if (findOpts) {
