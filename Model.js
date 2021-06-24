@@ -210,9 +210,9 @@ module.exports = function(options) {
                     });
                     collectionWatcher.on('change', collectionInsertedHandler);
                     collectionWatcher.on('change', collectionUpdateHandler);
+                    return collectionWatcher;
                 }
-
-                return collectionWatcher;
+                return null;
             }
 
 
