@@ -1,6 +1,5 @@
 {
   "_from": "derivejs",
-  "_id": "derivejs@0.6.0",
   "_inBundle": false,
   "_integrity": "sha512-f4rzN8PGzYOONDWWcG0BHWxcca7ODdF+dSBn/KYuW0lrK14yHy9IcBixKePgANeo8/ytKbbNVNMDi+6f2HrBkw==",
   "_location": "/derivejs",
@@ -63,5 +62,5 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "version": "2.4.0"
+  "version": "2.4.1"
 }
