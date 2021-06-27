@@ -228,7 +228,7 @@ Having obtained our data class, we can create object instances of it:
 ```javascript 
 var ship = new Spaceship('The Beyond'); 
 ```
-Each new instance - will have an identical data record (a "document") in a MongoDB database, in a `Spaceships` collection,  which will always be synced with the changes you make to the "local" object. Once you create a new instance, that instance will also have an auto-generated `_id` value (of type [ObjectID](https://docs.mongodb.com/manual/reference/method/ObjectId/)) associated with it.
+Each new instance - will have an identical data record (a "document") in a MongoDB database, in a `Spaceships` collection,  which will always be synced with the changes you make to the "local" object. Once you create a new instance, that instance will also have an auto-generated `_id` value (of type [ObjectID](https://docs.mongodb.com/manual/reference/method/ObjectId/)) associated with it. <br>
 (**Warning**: You should not alter the `_id` property yourself, nor should you try to give it your own value, doing so may lead to data inconsistency, and may affect data integrity).
 
 After a while you should see a message on the console: `The Beyond inserted`, that message comes from an instance method that all model instances have by default,
