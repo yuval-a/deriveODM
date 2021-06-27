@@ -325,28 +325,32 @@ module.exports = function(options) {
                             Object.defineProperty (this, p, {writable:false});                            
                         }
 
-                        // if (!syncManager.running) syncManager.run();
-
                         this.$_BARE = Object.assign ({}, this);
                         this.$_dbEvents = new EventEmitter();
 
-                        if (modelGet) {
-                            modelGet =  null;
-                        }
-                        else {
-                            syncManager.create(this);
-                        }
-                        // proxy.$_BARE = Object.assign({}, proxy);
-                        // proxy.$_dbEvents = new EventEmitter();
                         var proxy = new Proxy(this, proxyHandle.ModelHandler());
 
                         const collection = ModelClass.collection();
-                        if (collection) proxy.$_collectionWatcher = watchCollection.call(proxy, collection);
+                        if (collection) {
+                            proxy.$_collectionWatcher = watchCollection.call(proxy, collection);
+                            if (modelGet) {
+                                modelGet = null;
+                            }
+                            else {
+                                syncManager.create(this);
+                            }
+                        }
                         // This can happen if a collection still doesn't exist
                         else {
                             ModelClass.collectionReady()
                             .then(_=> {
-                                proxy.$_collectionWatcher = watchCollection.call(proxy, ModelClass.collection());                                
+                                proxy.$_collectionWatcher = watchCollection.call(proxy, ModelClass.collection());
+                                if (modelGet) {
+                                    modelGet = null;
+                                }
+                                else {
+                                    syncManager.create(this);
+                                }
                             });
                         }
 
