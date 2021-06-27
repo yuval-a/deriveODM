@@ -523,10 +523,10 @@ module.exports = function(options) {
                             }
 
                             let sort = ( sortBy ? sortBy : {MainIndex:-1} );
-                            var all = [], allDocs;
+                            var all = [];
 
                             if (!criteria) reject("getAll: invalid criteria! (Does collection " + this.collectionName + " exists?)");
-                            allDocs = syncManager.collection.find(criteria,{
+                            syncManager.collection.find(criteria,{
                                 sort:sort,
                                 skip:skip,
                                 limit:limit
@@ -552,10 +552,9 @@ module.exports = function(options) {
                             }
 
                             let sort = ( sortBy ? sortBy : {MainIndex:-1} );
-                            var allDocs;
 
                             if (!criteria) reject("getAll: invalid criteria! (Does collection " + this.collectionName + " exists?)");
-                            allDocs = syncManager.collection.find(criteria,{
+                            syncManager.collection.find(criteria,{
                                 sort:sort,
                                 skip:skip,
                                 limit:limit
