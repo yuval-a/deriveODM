@@ -262,7 +262,7 @@ thebeyond.addCrew(ricard);
 In Derive you can use the [`get` function](https://github.com/yuval-a/derivejs/blob/master/readme.md#getwhich) to resolve, or dereference a DBRef. Continuing the previous example:
 ```javascript
 var thebeyond = await Spaceship.get("The Beyond");
-var ricard    = await thebeyond.crew[0];
+var ricard    = await CrewMember.get(thebeyond.crew[0]);
 ```
 
 ### Mixins (Plugins)
