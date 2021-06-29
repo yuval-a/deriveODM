@@ -4,4 +4,4 @@
 in case of unexpected server/app shutdowns.
 - Consider combining Insert with Update operations on the same array in some situations (need to measure and test for performance gains).
 - Micro optimizations in the constructor.
-- Add support for (2dsphere)[https://docs.mongodb.com/manual/core/2dsphere/] indexes
+- Add support for [2dsphere](https://docs.mongodb.com/manual/core/2dsphere/) indexes
