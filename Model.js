@@ -333,28 +333,20 @@ module.exports = function(options) {
                         const collection = ModelClass.collection();
                         if (collection) {
                             proxy.$_collectionWatcher = watchCollection.call(proxy, collection);
-                            if (modelGet) {
-                                modelGet = null;
-                            }
-                            else {
-                                syncManager.create(this);
-                            }
+                            if (modelGet) modelGet = null;
+                            else syncManager.create(proxy);
+                            return proxy;
                         }
                         // This can happen if a collection still doesn't exist
                         else {
                             ModelClass.collectionReady()
                             .then(_=> {
                                 proxy.$_collectionWatcher = watchCollection.call(proxy, ModelClass.collection());
-                                if (modelGet) {
-                                    modelGet = null;
-                                }
-                                else {
-                                    syncManager.create(this);
-                                }
+                                if (modelGet) modelGet = null;
+                                else syncManager.create(proxy);
+                                return proxy;
                             });
                         }
-
-                        return proxy;
                     }
 
                     static mainIndex() {
