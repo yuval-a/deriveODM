@@ -1213,3 +1213,6 @@ and thus if you run one of the data getter functions (`get`, `getAll`, `map` etc
 and the getter function will fail. To prevent this - the `collectionReady` static method was added to Model classes - it returns a promise that resolves when the collection is 
 created and ready for any operations. If the collection already exists the function will resolve immediately. Use `collectionReady` in situations where it's not certain that a 
 collection exist, and you need to run a getter function on it.
+
+### A note about scaled systems
+When having several nodes that needs to access the same collections on a same database - you should **avoid** running Derive on each, as this could lead to unwanted race conditions -- instead, it is recommended to create a single Node that communicates directly with the DB using Derive, then have the separate nodes communicate with it via message queue - that describe the types of data operations needs to be done - this way, allowing to keep the single node to DB architecture, while still having several nodes running concurrently, sending data operations.
