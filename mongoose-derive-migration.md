@@ -1,3 +1,5 @@
+For performance benchmarking between the two frameworks, see: https://github.com/yuval-a/derive-benchmark
+
 # Introduction
 This document goes through a comparison between the **Mongoose** framework (another popular ODM) and **DeriveJS**, mostly syntax-wise, but occasionly showing the benefits, differences, down-sides and up-sides of both.
 It can also be used as a "migration guide" for people used to Mongoose and are considering to move to DeriveJS.
