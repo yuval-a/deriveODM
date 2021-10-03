@@ -60,7 +60,10 @@
     "url": "git+https://github.com/yuval-a/derivejs.git"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha test/model.test.js"
   },
-  "version": "2.5.1"
+  "version": "2.6.0",
+  "devDependencies": {
+    "mocha": "^9.0.3"
+  }
 }

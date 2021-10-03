@@ -43,6 +43,7 @@ It wraps your data classes and objects with [Javascript Proxies](https://develop
   * [Retrieving Data From a Database](#retrieving-data-from-a-database)
     + [`get`](#getwhich)
     + [`getAll`](#getallwhich-sortby-limit0-skip0)
+    + [`getAllCursor`](#getallcursorwhich-sortby-limit0-skip0)
     + [`getAllRead`](#getallreadwhich-sortby-limit0-skip0)
     + [`map`](#mapwhich-index-returnarray-limit0-skip0)
     + [`mapRead`](#mapreadwhich-index-returnarray-limit0-skip0)
@@ -621,7 +622,7 @@ You will often want to "restore" existing database objects from data collections
 Each Model class have various different static methods used to achieve this; 
 most of these are wrappers around certain Mongo `find` queries, which will make the process easier and more intuitive.
 
-There are 4 methods that can be used to retrieve data from the database, here is a brief explanation for each:
+There are several methods that can be used to retrieve data from the database, here is a brief explanation for each:
 
 ### `get(which)` 
 Returns **one** object instance.
@@ -631,6 +632,11 @@ Returns **all** (with an optional filter query) object instances (in an array). 
 * `sortBy` - to specify a different index to sort by, using an object such as `{<indexName>: <-1 or 1>}` - use `-1` for descending order, and `1` for ascending (the default is `{MainIndex:-1}`).
 * `limit` - to limit the number of returned results (default is `0`, which is unlimited). 
 * `skip` to specify an offset index for retrieved results (default is `0`).
+
+### `getAllCursor(which, sortBy, limit=0, skip=0)`
+This function is identical in functionality to [`getAll`](#getallwhich-sortby-limit0-skip0), only it returns a **[Cursor](https://mongodb.github.io/node-mongodb-native/3.6/api/Cursor.html)**. The cursor has identical functionality to the Node's MongoDB driver cursor, with one additional function:
+`getNext` - which is identical to the cursor's native [`next`](https://mongodb.github.io/node-mongodb-native/3.6/api/Cursor.html#next) function, only it 
+returns a Promise that resolves with the next document as a **Derive data object** (or null if there are no more documents to retrieve ).
 
 ### `getAllRead(which, sortBy, limit=0, skip=0)`
 This function is idential to [`getAll`](#getallwhich-sortby-limit0-skip0), only it returns "raw" Mongo documents, and **not** Derive data objects. 

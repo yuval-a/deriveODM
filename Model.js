@@ -533,6 +533,43 @@ module.exports = function(options) {
                         });
                     }
 
+                    static getAllCursor(which,sortBy,limit=0,skip=0) {
+                        return new Promise( (resolve,reject)=> {
+                            var criteria = Object.assign({},ModelClass.$DefaultCriteria);
+                            if (which) {
+                                if (typeof which === "object")
+                                    Object.assign (criteria, which);
+                                else 
+                                    criteria[MainIndex] = which;
+                            }
+
+                            let sort = ( sortBy ? sortBy : {MainIndex:-1} );
+                            var all = [];
+
+                            if (!criteria) reject("getAll: invalid criteria! (Does collection " + this.collectionName + " exists?)");
+                            let cursor = 
+                            syncManager.collection.find(criteria,{
+                                sort:sort,
+                                skip:skip,
+                                limit:limit
+                            });
+                            var ThisModel = this;
+                            cursor.getNext = function() {
+                                return new Promise ((resolve,reject)=> {
+                                    cursor.next((error, doc)=> {
+                                        if (!doc) resolve(doc);
+                                        else {
+                                            modelGet = doc;
+                                            resolve (new ThisModel());
+                                        }
+                                    });
+                                });
+                            }
+
+                            resolve(cursor);
+                        });
+                    }                    
+
                     static getAllRead(which,sortBy,limit=0,skip=0) {
                         return new Promise( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);

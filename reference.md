@@ -16,6 +16,7 @@ This document is a reference, describing all methods and functions available whe
     + [Data Retrieval Methods](#data-retrieval-methods)
       - [`get`](#getwhich)
       - [`getAll`](#getallwhich-sortby-limit0-skip0)
+      - [`getAllCursor`](#getallcursorwhich-sortby-limit0-skip0)
       - [`getAllRead`](#getallreadwhich-sortby-limit0-skip0)
       - [`map`](#mapwhich-index-returnarray-limit0-skip0)
       - [`mapRead`](#mapreadwhich-index-returnarray-limit0-skip0)
@@ -239,6 +240,10 @@ Pass a number to limit the number of returned results (default: 0, which means u
 Pass a number to skip this amount of results and start at a certain offset (default: 0, which means unlimited).
 ##### Returns
 A promise that resolves with an array of data objects if succesful, or rejects with an error if failed.
+
+#### `getAllCursor(which, sortBy, limit=0, skip=0)`
+Similar to [`getAll`](#getallwhich-sortby-limit0-skip0), only returns a Cursor, identical in functionality to [Node's Mongo driver Cursor](https://mongodb.github.io/node-mongodb-native/3.6/api/Cursor.html), with an additional `getNext` function which returns a Promise that resolves with the next available document 
+as a Derive data object (or null if there are no more documents available).
 
 #### `getAllRead(which, sortBy, limit=0, skip=0)`
 Similar to [`getAll`](#getallwhich-sortby-limit0-skip0), only returns "raw" Mongo documents, instead of proxied Derive objects. 
