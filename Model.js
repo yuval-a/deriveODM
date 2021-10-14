@@ -169,53 +169,6 @@ module.exports = function(options) {
                 return (/[a-z]+?/.test(this) === false);
             }
 
-            // Make sure to call with `this` as (proxied) Model instance
-            function watchCollection (collection) {
-                let collectionWatcher = collection.watch({ fullDocument: 'updateLookup' });
-
-                // ChangeStream (collection watch) is only supported for Replica Sets
-                // If not supported then dbevents will be triggered from SyncManager
-                if (collectionWatcher.topology.s.clusterTime) {
-                    const collectionInsertedHandler = changeData=> {
-                        if (changeData.operationType != 'insert') return;
-                        let id = changeData.documentKey._id;
-                        if (this._id.toString() == id.toString()) {
-                            // We make sure to pass `this` to events and callbacks, so the passed object will be a proxied (Derive) object.
-                            this.$_dbEvents.emit("inserted", id, this);
-                            if (this._inserted) this._inserted.call(this);
-                            this.$_collectionWatcher.off("inserted", collectionInsertedHandler);
-                        }
-                    };
-                    const collectionUpdateHandler = changeData=> {                        
-                        if (changeData.operationType != 'update') return;
-                        let id = changeData.documentKey._id;
-                        if (this._id.toString() == id.toString()) {
-                            let updatedFields = changeData.updateDescription.updatedFields;
-                            if (changeData.updateDescription.hasOwnProperty('removedFields')) {
-                                // fields that are unset
-                                for (let removedField of changeData.updateDescription.removedFields)
-                                    updatedFields[removedField] = null;
-                            }
-                            for (let field in updatedFields) 
-                                this[field] = {
-                                    $value: updatedFields[field],
-                                    $localOnly: true
-                                }
-                            // We make sure to pass `this` to events and callbacks, so the passed object will be a proxied (Derive) object.                                    
-                            this.$_dbEvents.emit("updated", changeData.documentKey._id, updatedFields, this);
-                        }
-                    };
-                    collectionWatcher.on('error', error=> {
-                        console.log (this.syncManager.collectionName + " watcher error: " + error);
-                    });
-                    collectionWatcher.on('change', collectionInsertedHandler);
-                    collectionWatcher.on('change', collectionUpdateHandler);
-                    return collectionWatcher;
-                }
-                return null;
-            }
-
-
             function Model(model,name,syncInterval, _syncer, _proxy) {
                 var IndexProps = new Set(), UniqueIndexes = {}, Indexes = {};
                 var MainIndex;
@@ -228,7 +181,7 @@ module.exports = function(options) {
                 model.$_ModelInstance = name+"s"; // Add secret boolean to know it's a model instance
                 model.$_BARE = null; // Will be used to contain a "bare" object (unproxified)
                 model.$_dbEvents = null; // Will be used for updated and inserted events
-                model.$_collectionWatcher = null;
+                //model.$_collectionWatcher = null;
 
                 for (var prop in model) {
 
@@ -288,7 +241,49 @@ module.exports = function(options) {
                 var modelGet = null;
                 var indexProps = [...IndexProps];
 
+                const CollectionWatcher = syncManager.collection.watch({ fullDocument: 'updateLookup' });
+                CollectionWatcher.setMaxListeners(10000);
+                CollectionWatcher.on('error', error=> {
+                    console.log (syncManager.collectionName + " watcher error: " + error);
+                });
 
+                // Make sure to call with `this` as the data instance
+                function addToCollectionWatch() {
+                    let instance = this; // new WeakRef(this);
+                    if (CollectionWatcher.topology.s.clusterTime) {
+                        const collectionInsertedHandler = changeData=> {
+                            if (changeData.operationType != 'insert') return;
+                            let id = changeData.documentKey._id;
+                            if (instance._id.toString() == id.toString()) {
+                                // We make sure to pass `this` to events and callbacks, so the passed object will be a proxied (Derive) object.
+                                instance.$_dbEvents.emit("inserted", id, instance);
+                                if (instance._inserted) instance._inserted.call(instance);
+                                CollectionWatcher.off("inserted", collectionInsertedHandler);
+                            }
+                        };
+                        const collectionUpdateHandler = changeData=> {                        
+                            if (changeData.operationType != 'update') return;
+                            let id = changeData.documentKey._id;
+                            if (instance._id.toString() == id.toString()) {
+                                let updatedFields = changeData.updateDescription.updatedFields;
+                                if (changeData.updateDescription.hasOwnProperty('removedFields')) {
+                                    // fields that are unset
+                                    for (let removedField of changeData.updateDescription.removedFields)
+                                        updatedFields[removedField] = null;
+                                }
+                                for (let field in updatedFields) 
+                                    this[field] = {
+                                        $value: updatedFields[field],
+                                        $localOnly: true
+                                    }
+                                // We make sure to pass `this` to events and callbacks, so the passed object will be a proxied (Derive) object.                                    
+                                instance.$_dbEvents.emit("updated", changeData.documentKey._id, updatedFields, instance);
+                            }
+                        };
+                        CollectionWatcher.on('change', collectionInsertedHandler);
+                        CollectionWatcher.on('change', collectionUpdateHandler);
+                    }
+                }
 
                 let ModelClass = class {
                 //class ModelClass {
@@ -329,10 +324,9 @@ module.exports = function(options) {
                         this.$_dbEvents = new EventEmitter();
 
                         var proxy = new Proxy(this, proxyHandle.ModelHandler());
-
                         const collection = ModelClass.collection();
                         if (collection) {
-                            proxy.$_collectionWatcher = watchCollection.call(proxy, collection);
+                            addToCollectionWatch.call(proxy);
                             if (modelGet) modelGet = null;
                             else syncManager.create(proxy);
                             return proxy;
@@ -341,7 +335,7 @@ module.exports = function(options) {
                         else {
                             ModelClass.collectionReady()
                             .then(_=> {
-                                proxy.$_collectionWatcher = watchCollection.call(proxy, ModelClass.collection());
+                                addToCollectionWatch.call(proxy);
                                 if (modelGet) modelGet = null;
                                 else syncManager.create(proxy);
                                 return proxy;
@@ -506,6 +500,7 @@ module.exports = function(options) {
                     // sort by is an object of {index:<1 or -1>} s
                     static getAll(which,sortBy,limit=0,skip=0) {
                         return new Promise( (resolve,reject)=> {
+                            if (!syncManager.collection) resolve(null);
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
                             if (which) {
                                 if (typeof which === "object")
@@ -518,17 +513,18 @@ module.exports = function(options) {
                             var all = [];
 
                             if (!criteria) reject("getAll: invalid criteria! (Does collection " + this.collectionName + " exists?)");
+                            console.log ("Calling find");
+                            let start = performance.now();
                             syncManager.collection.find(criteria,{
                                 sort:sort,
                                 skip:skip,
                                 limit:limit
                             }).toArray()
                             .then(alldocs=> {
-                                alldocs.forEach(doc=> {
+                                resolve(alldocs.map(doc=> {
                                     modelGet = doc;
-                                    all.push(new this());
-                                });
-                                resolve (all);
+                                    return new this();
+                                }));
                             });
                         });
                     }
@@ -735,7 +731,7 @@ module.exports = function(options) {
                                 let docs = await cursor.toArray();
                                 if (docs && docs.length) {
                                     if (returnAsModel) {
-                                        var all = [];
+                                        let all = [];
                                         docs.forEach(doc=> {
                                             modelGet = doc;
                                             all.push(new thisclass());

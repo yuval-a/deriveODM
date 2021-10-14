@@ -1,5 +1,8 @@
 # Version Log
 
+## [2.8.0](https://github.com/yuval-a/derivejs/releases/tag/2.0.0)
+* Fixed a memory leak, where new separate collection watchers used to be created for each new data model intance.
+
 ## [2.0.0](https://github.com/yuval-a/derivejs/releases/tag/2.0.0)
 * Default `SyncManager` sync interval changed to 0, and is now called with `setImmediate`.
 * Added support for deleting data object properties using the `delete` keyword, which will trigger an `unset` on the equivalent property of the DB document. 
