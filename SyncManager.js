@@ -371,11 +371,10 @@ var SyncManager = {
                                     }
                                 })
                                 .then (function() {
-                                    if (!isChangeStreamSupported) 
-                                        insertDocs.forEach(doc=> {
-                                            doc.$_dbEvents.emit("inserted", doc._id, doc);
-                                            if (doc._inserted) doc._inserted.call(doc);
-                                        });
+                                    insertDocs.forEach(doc=> {
+                                        doc.$_dbEvents.emit("inserted", doc._id, doc);
+                                        if (doc._inserted) doc._inserted.call(doc);
+                                    });
                                     this.clearInserts();
                                     this.unlockInsert();
                                     resolve(); // <- otherwise syncer will be stuck in PENDING forever. Fixed in 20/11/18

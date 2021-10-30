@@ -214,6 +214,12 @@ using MongoDB query-format.
 A Promise, that resolves if the operation was succesful, or rejects with an error, if there was an error.
 
 ### Data retrieval methods
+Note: All data retrieval functions have an additional boolean `collectionWatch` argument as their last argument, with `false` as default. 
+When set to `true` a [ChangeStream](https://docs.mongodb.com/manual/changeStreams/) event listener will be attached to the retrieved data object. This will make 
+the data object be aware to updates made to the database document from **an external source**, and those changes will be reflected on the local data object. 
+ChangeStream support is optional and is turned **off** by default, as, by design, the attached event listener preserve a strong reference to the data object instance in memory - 
+and as a result the data object will **not** be garbage collected and will remain in memory. Turning ChangeStream on for many data objects will keep them in memory and can lead 
+to memory leaks, therefore, it is adviced to use this feature sparingly. For more information - read the documentation.
 
 #### `get(which)`
 Used to return a single document from a collection.

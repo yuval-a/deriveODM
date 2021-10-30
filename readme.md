@@ -259,7 +259,12 @@ Your `_id` values will vary, of-course.
 ### Built-in Methods: Callbacks and Hooks
 
 **NEW VERSION UPDATE:**  
-* Version 2+ now uses [Change Streams](https://docs.mongodb.com/manual/changeStreams/) to listen for DB persistence changes and events. This means that when you work with a local document, 
+* Version 3 made the use of [Change Streams](https://docs.mongodb.com/manual/changeStreams/) optional, by adding an additional last boolean argument to all data retrieval functions, 
+set to `false` by default. Using ChangeStreams and assigning event listeners to data object instances creates strong references to the instances in memory, thereby preventing them 
+from being garbage collected, this can amount to excess memory usage and can lead to memory leaks - therfore this feature is turned off by default, and can be optionally turned on, 
+for specific data objects. Consider this when using this feature, and use it sparingly. Prior (2+) versions always used ChangeStreams by default for all data objects.
+
+* Turning on the use of [Change Streams](https://docs.mongodb.com/manual/changeStreams/) on data objects means that when you work with a local document, 
 even when the data changes in the DB from some other external source - **this change will be detected** and **will be** automatically reflected in your version of the document as well. <br>
 **NOTE**: Change Streams are only supported for Replica Sets. If you use a single DB instance, then they will **not be used**, and changes will only be triggered by the 
 `SyncManager` itself - this means that in this case - changes to the DB from another external source - **will not** be immediately reflected in your local documents (you would need to call the `.get()` method to retrieve a "fresh copy"). Note that the Mongo team recommends to **always use** replica sets in production environments. <br>
@@ -623,6 +628,13 @@ Each Model class have various different static methods used to achieve this;
 most of these are wrappers around certain Mongo `find` queries, which will make the process easier and more intuitive.
 
 There are several methods that can be used to retrieve data from the database, here is a brief explanation for each:
+
+**NOTE**: Starting from version 3, all data retrieval functions have an additional boolean `collectionWatch` argument as their last argument, with `false` as the default value. 
+Setting this argument to `true` will enable `ChangeStream` support for the retrieved data object(s), will make the data object(s) be aware to updates and changes to the DB 
+document **from an external source**, and reflect those in the local data object(s). Assigning ChangeStream event listeners to data instances creates strong references in memory 
+to them, thereby preventing them from being garbage collected (even if you set them to `null` or `undefined`). This can amass to an excess use of memory and can lead to memory leaks -
+thereby this feature is turned off by default, and should be used sparingly (for example, if you intend to keep references to data object instances indefinitely).
+Prior versions (2+) had this feature on for all data object instances by default.
 
 ### `get(which)` 
 Returns **one** object instance.

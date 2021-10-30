@@ -249,18 +249,8 @@ module.exports = function(options) {
 
                 // Make sure to call with `this` as the data instance
                 function addToCollectionWatch() {
-                    let instance = this; // new WeakRef(this);
+                    let instance = this;
                     if (CollectionWatcher.topology.s.clusterTime) {
-                        const collectionInsertedHandler = changeData=> {
-                            if (changeData.operationType != 'insert') return;
-                            let id = changeData.documentKey._id;
-                            if (instance._id.toString() == id.toString()) {
-                                // We make sure to pass `this` to events and callbacks, so the passed object will be a proxied (Derive) object.
-                                instance.$_dbEvents.emit("inserted", id, instance);
-                                if (instance._inserted) instance._inserted.call(instance);
-                                CollectionWatcher.off("inserted", collectionInsertedHandler);
-                            }
-                        };
                         const collectionUpdateHandler = changeData=> {                        
                             if (changeData.operationType != 'update') return;
                             let id = changeData.documentKey._id;
@@ -280,7 +270,6 @@ module.exports = function(options) {
                                 instance.$_dbEvents.emit("updated", changeData.documentKey._id, updatedFields, instance);
                             }
                         };
-                        CollectionWatcher.on('change', collectionInsertedHandler);
                         CollectionWatcher.on('change', collectionUpdateHandler);
                     }
                 }
@@ -288,7 +277,7 @@ module.exports = function(options) {
                 let ModelClass = class {
                 //class ModelClass {
 
-                    constructor() {
+                    constructor(collectionWatch = false) {
                         Object.defineProperties (this,clone(PropDescrp));
                         
                         var p;
@@ -326,7 +315,7 @@ module.exports = function(options) {
                         var proxy = new Proxy(this, proxyHandle.ModelHandler());
                         const collection = ModelClass.collection();
                         if (collection) {
-                            addToCollectionWatch.call(proxy);
+                            if (collectionWatch) addToCollectionWatch.call(proxy);
                             if (modelGet) modelGet = null;
                             else syncManager.create(proxy);
                             return proxy;
@@ -335,7 +324,7 @@ module.exports = function(options) {
                         else {
                             ModelClass.collectionReady()
                             .then(_=> {
-                                addToCollectionWatch.call(proxy);
+                                if (collectionWatch) addToCollectionWatch.call(proxy);
                                 if (modelGet) modelGet = null;
                                 else syncManager.create(proxy);
                                 return proxy;
@@ -455,7 +444,7 @@ module.exports = function(options) {
                     }
 
                     // get functions
-                    static get(which) {
+                    static get(which, collectionWatch=false) {
                         return new Promise( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
                             if (typeof which === "object" && which.constructor.name === "DBRef") {
@@ -481,7 +470,7 @@ module.exports = function(options) {
                                 doc=>{
                                     if (doc) {
                                         modelGet = doc;
-                                        resolve (new this());
+                                        resolve (new this(collectionWatch));
                                     }
                                     else reject("get: Document "+(which._id?which._id:"")+" not found!");
                                 },
@@ -498,7 +487,7 @@ module.exports = function(options) {
                     }
 
                     // sort by is an object of {index:<1 or -1>} s
-                    static getAll(which,sortBy,limit=0,skip=0) {
+                    static getAll(which,sortBy,limit=0,skip=0,collectionWatch=false) {
                         return new Promise( (resolve,reject)=> {
                             if (!syncManager.collection) resolve(null);
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
@@ -523,13 +512,13 @@ module.exports = function(options) {
                             .then(alldocs=> {
                                 resolve(alldocs.map(doc=> {
                                     modelGet = doc;
-                                    return new this();
+                                    return new this(collectionWatch);
                                 }));
                             });
                         });
                     }
 
-                    static getAllCursor(which,sortBy,limit=0,skip=0) {
+                    static getAllCursor(which,sortBy,limit=0,skip=0,collectionWatch=false) {
                         return new Promise( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
                             if (which) {
@@ -556,7 +545,7 @@ module.exports = function(options) {
                                         if (!doc) resolve(doc);
                                         else {
                                             modelGet = doc;
-                                            resolve (new ThisModel());
+                                            resolve (new ThisModel(collectionWatch));
                                         }
                                     });
                                 });
@@ -591,7 +580,7 @@ module.exports = function(options) {
                     }
 
                     
-                    static map(which, index, returnArray, limit=0, skip=0) {
+                    static map(which, index, returnArray, limit=0, skip=0, collectionWatch=false) {
                         return new Promise( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
                             if (which) {
@@ -609,7 +598,7 @@ module.exports = function(options) {
                             .then(alldocs=> {
                                 alldocs.forEach(doc=> {
                                     modelGet = doc;
-                                    allmap[doc[index]] = new this();
+                                    allmap[doc[index]] = new this(collectionWatch);
                                 });
                                 resolve (allmap);
                             });
@@ -640,7 +629,7 @@ module.exports = function(options) {
                         });
                     }
 
-                    static join(which,joinWith,localField,foreignField,joinAs,returnAsModel=false) {
+                    static join(which,joinWith,localField,foreignField,joinAs,returnAsModel=false,collectionWatch=false) {
                         var thisclass = this;
                         return new Promise( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
@@ -676,7 +665,7 @@ module.exports = function(options) {
                                 if (doc && doc.length) {
                                     if (returnAsModel) {
                                         modelGet = doc[0];
-                                        resolve (new thisclass());
+                                        resolve (new thisclass(collectionWatch));
                                     }
                                     else {
                                         resolve(doc[0]);
@@ -687,7 +676,7 @@ module.exports = function(options) {
                         });
                     }
 
-                    static joinAll(which, joinOpts, findOpts, returnAsModel=false) {
+                    static joinAll(which, joinOpts, findOpts, returnAsModel=false,collectionWatch=false) {
                         //joinWith,localField,foreignField,joinAs,returnAsModel=false) {
                         var thisclass = this;
                         return new Promise( (resolve,reject)=> {
@@ -787,7 +776,7 @@ module.exports = function(options) {
                         });
                     }
 
-                    static has(which, returnDocument) {
+                    static has(which, returnDocument, collectionWatch=false) {
                         return new Promise ( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
                             if (which) {
@@ -804,7 +793,7 @@ module.exports = function(options) {
                                     if (has && returnDocument) {
                                         cur.next().then(doc=> {
                                             modelGet = doc;
-                                            resolve (new this());
+                                            resolve (new this(collectionWatch));
                                         })
                                     }
                                     else
