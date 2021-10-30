@@ -181,7 +181,7 @@ module.exports = function(options) {
                 model.$_ModelInstance = name+"s"; // Add secret boolean to know it's a model instance
                 model.$_BARE = null; // Will be used to contain a "bare" object (unproxified)
                 model.$_dbEvents = null; // Will be used for updated and inserted events
-                //model.$_collectionWatcher = null;
+                model.$_collectionUpdateListener = null;
 
                 for (var prop in model) {
 
@@ -247,33 +247,6 @@ module.exports = function(options) {
                     console.log (syncManager.collectionName + " watcher error: " + error);
                 });
 
-                // Make sure to call with `this` as the data instance
-                function addToCollectionWatch() {
-                    let instance = this;
-                    if (CollectionWatcher.topology.s.clusterTime) {
-                        const collectionUpdateHandler = changeData=> {                        
-                            if (changeData.operationType != 'update') return;
-                            let id = changeData.documentKey._id;
-                            if (instance._id.toString() == id.toString()) {
-                                let updatedFields = changeData.updateDescription.updatedFields;
-                                if (changeData.updateDescription.hasOwnProperty('removedFields')) {
-                                    // fields that are unset
-                                    for (let removedField of changeData.updateDescription.removedFields)
-                                        updatedFields[removedField] = null;
-                                }
-                                for (let field in updatedFields) 
-                                    this[field] = {
-                                        $value: updatedFields[field],
-                                        $localOnly: true
-                                    }
-                                // We make sure to pass `this` to events and callbacks, so the passed object will be a proxied (Derive) object.                                    
-                                instance.$_dbEvents.emit("updated", changeData.documentKey._id, updatedFields, instance);
-                            }
-                        };
-                        CollectionWatcher.on('change', collectionUpdateHandler);
-                    }
-                }
-
                 let ModelClass = class {
                 //class ModelClass {
 
@@ -313,10 +286,30 @@ module.exports = function(options) {
                         this.$_dbEvents = new EventEmitter();
 
                         var proxy = new Proxy(this, proxyHandle.ModelHandler());
+
+                        proxy.$_collectionUpdateListener = changeData=> {
+                            if (changeData.operationType != 'update') return;
+                            let id = changeData.documentKey._id;
+                            if (proxy._id.toString() == id.toString()) {
+                                let updatedFields = changeData.updateDescription.updatedFields;
+                                if (changeData.updateDescription.hasOwnProperty('removedFields')) {
+                                    // fields that are unset
+                                    for (let removedField of changeData.updateDescription.removedFields)
+                                        updatedFields[removedField] = null;
+                                }
+                                for (let field in updatedFields) 
+                                    proxy[field] = {
+                                        $value: updatedFields[field],
+                                        $localOnly: true
+                                    }
+                                proxy.$_dbEvents.emit("updated", changeData.documentKey._id, updatedFields, proxy);
+                            }
+                        }
+
                         const collection = ModelClass.collection();
                         if (collection) {
-                            if (collectionWatch) addToCollectionWatch.call(proxy);
                             if (modelGet) modelGet = null;
+                            if (collectionWatch) proxy.watch(true); 
                             else syncManager.create(proxy);
                             return proxy;
                         }
@@ -324,8 +317,8 @@ module.exports = function(options) {
                         else {
                             ModelClass.collectionReady()
                             .then(_=> {
-                                if (collectionWatch) addToCollectionWatch.call(proxy);
                                 if (modelGet) modelGet = null;
+                                if (collectionWatch) proxy.watch(true);
                                 else syncManager.create(proxy);
                                 return proxy;
                             });
@@ -334,6 +327,18 @@ module.exports = function(options) {
 
                     static mainIndex() {
                         return MainIndex;
+                    }
+
+                    // Toggles Collection Watch (ChangeStream)
+                    watch(on) {
+                        if (!CollectionWatcher.topology.s.clusterTime) return;
+                        if (on) {
+                            CollectionWatcher.removeListener('change', this.$_collectionUpdateListener);
+                            CollectionWatcher.addListener('change', this.$_collectionUpdateListener);
+                        }
+                        else {
+                            CollectionWatcher.removeListener('change', this.$_collectionUpdateListener);
+                        }
                     }
                     
                     // Returns a "derived class" of ModelClass, extending the model with deriveModel
@@ -502,8 +507,6 @@ module.exports = function(options) {
                             var all = [];
 
                             if (!criteria) reject("getAll: invalid criteria! (Does collection " + this.collectionName + " exists?)");
-                            console.log ("Calling find");
-                            let start = performance.now();
                             syncManager.collection.find(criteria,{
                                 sort:sort,
                                 skip:skip,

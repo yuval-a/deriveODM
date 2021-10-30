@@ -32,6 +32,7 @@ This document is a reference, describing all methods and functions available whe
     + [`changed`](#changedproperty-newvalue-oldvalue)
     + [Assignment with `$callback` Syntax (Update Callbacks)](#assignment-with-callback-syntax-update-callbacks)
     + [`_created`](#_created)
+    + [`watch(on)`](#watchon)
   * [Instance Events (`$_dbEvents`)](#instance-events-_dbevents)
     + [`inserted` Event](#inserted-event)
     + [`updated` Event](#updated-event)
@@ -406,6 +407,9 @@ The pevious, old, value of the property.
 ### `_created()`
 This function is not defined by default on a data object instance - but you can define it yourself - if you do, it will trigger whenever a data object is created (locally), 
 and **before** an equivalent document is inserted to the DB.
+
+### `watch(on)`
+Toggle on/off the ChangeStream support for the data instance. When ChangeStream support is on - the object instance will be aware of updates and changes to the document in the database **from external sources**, reflecting those in the local data object instance, as well as triggering an 'updated' event on `$_dbEvents`. Note that turning ChangeStream on, will assign an event listener to the ChangeStream - that will keep a **strong reference** in memory to the data object instance, thereby making it unavailable for garbage collection - this means that update events will trigger even if the data object instance is set to `null`. If you use `watch` to turn on ChangeStream support and then no longer need to data object instance, you should make sure you turn ChangeStream off first, by calling `watch` with `false` - this will make the instance garbage collectible once there are no more references to it.
 
 ## Instance Events (`$_dbEvents`)
 Each Derive data object has a built-in `$_dbEvents` meta property, which is an `EventEmitter` object, that you can use to listen for DB persistence events and changes, 

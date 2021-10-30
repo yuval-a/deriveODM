@@ -34,6 +34,7 @@ It wraps your data classes and objects with [Javascript Proxies](https://develop
           - [`inserted` Event](#inserted-event)
           - [`updated` Event](#updated-event)
           - [Setting a Callback Function to a Meta Property](#setting-a-callback-function-to-a-meta-property)
+      - [`watch(on)`](#watchon)
       - [Listening for local changes](#listening-for-local-changes)
           - [`changed`](#changedproperty-newvalue-oldvalue)
           - [`$Listen`](#listen)
@@ -263,7 +264,7 @@ Your `_id` values will vary, of-course.
 set to `false` by default. Using ChangeStreams and assigning event listeners to data object instances creates strong references to the instances in memory, thereby preventing them 
 from being garbage collected, this can amount to excess memory usage and can lead to memory leaks - therfore this feature is turned off by default, and can be optionally turned on, 
 for specific data objects. Consider this when using this feature, and use it sparingly. Prior (2+) versions always used ChangeStreams by default for all data objects.
-
+* Added the instance `watch(on)` method, that lets you turn on or off ChangeStream support.
 * Turning on the use of [Change Streams](https://docs.mongodb.com/manual/changeStreams/) on data objects means that when you work with a local document, 
 even when the data changes in the DB from some other external source - **this change will be detected** and **will be** automatically reflected in your version of the document as well. <br>
 **NOTE**: Change Streams are only supported for Replica Sets. If you use a single DB instance, then they will **not be used**, and changes will only be triggered by the 
@@ -426,6 +427,9 @@ var ship = new Ship("shipA","", function() {
 ```
 
 Note how when overriding a constructor in a child class - you need to specify the indexes as arguments before adding new ones, and of-course, you need to call the parent constructor via `super`.
+
+#### `watch(on)`
+`watch` is a function all data object instances have, calling it can toggle on/off the ChangeStream support for the data instance. When ChangeStream support is on - the object instance will be aware of updates and changes to the document in the database **from external sources**, reflecting those in the local data object instance, as well as triggering an 'updated' event on `$_dbEvents`. Note that turning ChangeStream on, will assign an event listener to the ChangeStream - that will keep a **strong reference** in memory to the data object instance, thereby making it unavailable for garbage collection - this means that update events will trigger even if the data object instance is set to `null`. If you use `watch` to turn on ChangeStream support and then no longer need to data object instance, you should make sure you turn ChangeStream off first, by calling `watch` with `false` - this will make the instance garbage collectible once there are no more references to it.
 
 ##### Listening For Local Changes
 The fourth built-in method can be used when you want to listen for value-changes on certain properties of your object,
