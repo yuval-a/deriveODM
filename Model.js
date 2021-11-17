@@ -309,8 +309,8 @@ module.exports = function(options) {
                         const collection = ModelClass.collection();
                         if (collection) {
                             if (modelGet) modelGet = null;
-                            if (collectionWatch) proxy.watch(true); 
                             else syncManager.create(proxy);
+                            if (collectionWatch) proxy.watch(true); 
                             return proxy;
                         }
                         // This can happen if a collection still doesn't exist
@@ -318,8 +318,8 @@ module.exports = function(options) {
                             ModelClass.collectionReady()
                             .then(_=> {
                                 if (modelGet) modelGet = null;
-                                if (collectionWatch) proxy.watch(true);
                                 else syncManager.create(proxy);
+                                if (collectionWatch) proxy.watch(true);
                                 return proxy;
                             });
                         }
