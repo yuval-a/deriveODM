@@ -371,6 +371,8 @@ var SyncManager = {
                                     }
                                 })
                                 .then (function() {
+                                    // Take Object.values again, to have them be updated with values deleted due to errors
+                                    insertDocs = Object.values(inserts);
                                     insertDocs.forEach(doc=> {
                                         doc.$_dbEvents.emit("inserted", doc._id, doc);
                                         if (doc._inserted) doc._inserted.call(doc);
