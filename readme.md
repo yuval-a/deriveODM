@@ -197,6 +197,14 @@ var Spaceship = Model({
 }, "Spaceship");
 ```
 
+The property names specify the expected property key names for this data model. The values are **default values** - values that
+will be assigned to the properties upon initial creation of the data object (and data document), you can put any values you like, including `null`, empty strings, strings, numbers, objects (with keys and values) and so on.
+Unlike many other ODMs - Derive does *not* enforce any strict data types, preserving the spirit of dynamic data typing.
+
+**A note about objects as values**: If specifying an empty object ({}) as a value, you will not be able to set any new properties to it (as they will not be part of the "schema"), however, it is perfectly acceptable to assign a totally new object 
+with properties and values as a value to any defined property.
+If you assign an object, with properties and values as a default value to a property in the schema specification - you may change the values of those properties, but trying to set a new property to that object will yield an error ("Trying to set unknown property).
+
 Now `Spaceship` is a `class` you can create new object instances of.
 The second argument for the `Model` function is a name, that will be used for both the class name, and the collection name (where an `s` will be added to, to signify "plural" form; So the collection name will be `Spaceships` in this case). There is an additional optional argument, that can set the "sync interval" duration, the amount of time between each interval where the SyncManager class instance runs the database bulk operations stacked since the last sync. The default is 0, and the call is made using `setImmediate` to avoid "clogging" Node's Event Loop (Note: prior to version 2.0.0, the default was 1000 ms).
 (The Model function also have two additional arguments `_syncer`, and `_proxy`, used internally and that shouldn't be used).

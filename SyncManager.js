@@ -299,13 +299,14 @@ var SyncManager = {
                         }
 
                         create(obj) {
-                            let insert = this.Mapper.Create(obj);
+                            // Mapper.create moved to Model layer
+                            // let insert = this.Mapper.Create(obj);
                             if (!this.insertLocked) {
-                                this.BULK.inserts[obj._id] = insert;
+                                this.BULK.inserts[obj._id] = obj;
                             }
                             else {
                                 this.once("insertUnlocked",function() {
-                                    this.BULK.inserts[obj._id] = insert;
+                                    this.BULK.inserts[obj._id] = obj;
                                 });
                             }
                         }
@@ -374,6 +375,7 @@ var SyncManager = {
                                     // Take Object.values again, to have them be updated with values deleted due to errors
                                     insertDocs = Object.values(inserts);
                                     insertDocs.forEach(doc=> {
+                                        // Possibly don't return any arguments here in the next breaking change version
                                         doc.$_dbEvents.emit("inserted", doc._id, doc);
                                         if (doc._inserted) doc._inserted.call(doc);
                                     });

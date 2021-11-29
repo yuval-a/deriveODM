@@ -2,6 +2,7 @@
 const clone = require('lodash.clonedeep');
 const DBRef = require('mongodb').DBRef;
 const EventEmitter = require('events');
+const ModelMapper = require('./MongoModelMapper');
 
 module.exports = function(options) {
 
@@ -32,8 +33,8 @@ module.exports = function(options) {
                             if (!propDescrp) {
                                 // Commented out as this triggers on 'sub properties' which don't have a property descriptor
                                 // Invoke the _error method on the object instance
-                                // target._error ("Trying to set unknown property: "+property+" (property value is left unchanged).");
-                                // return true;
+                                target._error ("Trying to set unknown property: "+property+" (property value is left unchanged).");
+                                return true;
                             }
                             else {
                                 // Readonly
@@ -141,7 +142,6 @@ module.exports = function(options) {
                                         if (value && value.hasOwnProperty('$_ModelInstance')) {
                                             value = new DBRef(value.$_ModelInstance, value._id);
                                         }
-                                        
                                         syncManager.update (originalTarget, originalTarget._id, setPath, value, target[prop], callback);
                                     }
                                 }
@@ -240,12 +240,18 @@ module.exports = function(options) {
 
                 var modelGet = null;
                 var indexProps = [...IndexProps];
+                var CollectionWatcher;
 
-                const CollectionWatcher = syncManager.collection.watch({ fullDocument: 'updateLookup' });
-                CollectionWatcher.setMaxListeners(10000);
-                CollectionWatcher.on('error', error=> {
-                    console.log (syncManager.collectionName + " watcher error: " + error);
-                });
+                function setCollectionWatcher() {
+                    CollectionWatcher = syncManager.collection.watch({ fullDocument: 'updateLookup' });
+                    CollectionWatcher.setMaxListeners(10000);
+                    CollectionWatcher.on('error', error=> {
+                        console.log (syncManager.collectionName + " watcher error: " + error);
+                    });
+                }
+
+                if (syncManager.collection) setCollectionWatcher();
+                else syncManager.once('ready', setCollectionWatcher);
 
                 let ModelClass = class {
                 //class ModelClass {
@@ -302,26 +308,38 @@ module.exports = function(options) {
                                         $value: updatedFields[field],
                                         $localOnly: true
                                     }
+                                // Possibly just return updatedFields in the next breaking change version    
                                 proxy.$_dbEvents.emit("updated", changeData.documentKey._id, updatedFields, proxy);
                             }
                         }
 
-                        const collection = ModelClass.collection();
-                        if (collection) {
-                            if (modelGet) modelGet = null;
-                            else syncManager.create(proxy);
-                            if (collectionWatch) proxy.watch(true); 
-                            return proxy;
+                        let collectionWatchOn = false;
+                        if (modelGet) {
+                            collectionWatchOn = collectionWatch;
+                            modelGet = null;
                         }
-                        // This can happen if a collection still doesn't exist
                         else {
-                            ModelClass.collectionReady()
-                            .then(_=> {
-                                if (modelGet) modelGet = null;
-                                else syncManager.create(proxy);
-                                if (collectionWatch) proxy.watch(true);
+                            proxy = ModelMapper.Create(proxy);
+                            syncManager.create(proxy);
+                        }
+
+                        if (collectionWatchOn) {
+                            const collection = ModelClass.collection();
+                            if (collection) {
+                                proxy.watch(true); 
                                 return proxy;
-                            });
+                            }
+                            // This can happen if a collection still doesn't exist
+                            else {
+                                ModelClass.collectionReady()
+                                .then(_=> {
+                                    proxy.watch(true);
+                                    return proxy;
+                                });
+                            }
+                        }
+                        else {
+                            return proxy;
                         }
                     }
 
