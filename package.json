@@ -62,7 +62,7 @@
   "scripts": {
     "test": "mocha test/model.test.js"
   },
-  "version": "3.1.2",
+  "version": "3.2.0",
   "devDependencies": {
     "mocha": "^9.0.3"
   }
