@@ -729,12 +729,12 @@ Let's see some examples, we assume the models from the previous examples are alr
 To get our "`The Beyond`" Spaceship from the database into a local object:
 
 ```javascript
-    var thebeyond;
-    Spaceship.get("The Beyond")
-    .then (ship=> {
-        thebeyond = ship;
-        // thebeyond contains the object from the DB
-    });
+var thebeyond;
+Spaceship.get("The Beyond")
+.then (ship=> {
+	thebeyond = ship;
+	// thebeyond contains the object from the DB
+});
 ```
 
 Or, using the `async/await` way:
