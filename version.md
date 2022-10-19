@@ -1,8 +1,8 @@
 # Version Log
 
-## 3.3.0
+## [3.3.0](https://github.com/yuval-a/derivejs/releases/tag/3.3.0)
 * Added projection option.
-* 
+
 ## [2.8.0](https://github.com/yuval-a/derivejs/releases/tag/2.0.0)
 * Fixed a memory leak, where new separate collection watchers used to be created for each new data model intance.
 
