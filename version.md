@@ -1,5 +1,12 @@
 # Version Log
 
+## [3.3.0](https://github.com/yuval-a/derivejs/releases/tag/3.3.0)
+* Added projection option.
+
+## [3.1.0](https://github.com/yuval-a/derivejs/releases/tag/3.1.0)
+* ChangeStream support is now optional, and turned off by default for all data object instances.
+* Added `watch(on)` instance method for toggling on/off ChangeStream support.
+
 ## [2.8.0](https://github.com/yuval-a/derivejs/releases/tag/2.0.0)
 * Fixed a memory leak, where new separate collection watchers used to be created for each new data model intance.
 
