@@ -53,14 +53,14 @@ module.exports = function(options) {
                                             }
                                             */
                                             // Special assignment with callback
-                                            if ("$callback" in value) {
+                                            if (value.hasOwnProperty("$callback")) {
                                                 // Make the callback "asynchronous"
                                                 let $callback = value.$callback;
                                                 callback = ()=> { setTimeout($callback.bind(target), 0) };
                                             }
 
                                             // This is a "local only" update (called when an update is triggered from an external source)
-                                            if ("$localOnly" in value && value.$localOnly == true) localOnly = true;
+                                            if (value.hasOwnProperty("$localOnly") && value.$localOnly == true) localOnly = true;
 
                                             value = value.$value;
                                     }
@@ -118,7 +118,7 @@ module.exports = function(options) {
                     var syncManager = this.syncManager;
                     return {
                         set(target, prop, value, receiver) {
-                            if (!Array.isArray(target) && !(prop in target)) {
+                            if (!Array.isArray(target) && !(target.hasOwnProperty(prop))) {
                                 originalTarget._error ("Trying to set unknown property: "+prop+" (property value is left unchanged).");
                                 return true;
                             }
@@ -130,8 +130,8 @@ module.exports = function(options) {
 
                                         let callback = false;
                                         // Special assignment with callback
-                                        if (typeof value === "object" && "$value" in value) {
-                                            if (!"$callback" in value) {
+                                        if (typeof value === "object" && value.hasOwnProperty("$value")) {
+                                            if (!value.hasOwnProperty("$callback")) {
                                                 target._error ("Must use $callback when using object assignment with $value. $callback not found!");
                                                 return false;
                                             }
@@ -199,7 +199,7 @@ module.exports = function(options) {
                             descrp.writable = false;
                     }
                     else {
-                        descrp = { enumerable: true };
+                        descrp = { enumerable: true, configurable: true };
                         descrp.writable = true;
                         // Properties ending with _ are added to $DefaultCriteria
                         if (prop.lastIndexOf('_') === prop.length-1) {
@@ -250,6 +250,23 @@ module.exports = function(options) {
                     });
                 }
 
+                /* Returns a MongoDB style "projection" object from an array of fields
+                 * If includeNonModelFields then the projection will also include fields that
+                 * were not defined in the model - this is used in Join (lookup aggregation) operations.
+                 */
+                function createProjectionObject(fields, includeNonModelFields=false) {
+                    let projection = {};
+                    if (includeNonModelFields) {
+                        projection = fields.reduce((proj, field)=> { proj[field] = 1; return proj; }, {});
+                    }
+                    else
+                    for (let prop in PropDescrp) {
+                        if (prop.indexOf('$') === 0) continue;
+                        if (fields.includes(prop)) projection[prop] =  1;
+                    }
+                    return projection;
+                }
+
                 if (syncManager.collection) setCollectionWatcher();
                 else syncManager.once('ready', setCollectionWatcher);
 
@@ -265,6 +282,11 @@ module.exports = function(options) {
                         if (modelGet) {
                             for (p in modelGet) {
                                 this[p] = modelGet[p];
+                            }
+                            // Delete properties from this not in modelGet. This can happen when we use projection to get only some of the fields
+                            for (p in this) {
+                                if (!modelGet.hasOwnProperty(p))
+                                    delete this[p];
                             }
                         }
                         // Indexes can be set from constructor arguments
@@ -470,6 +492,7 @@ module.exports = function(options) {
                     static get(which, collectionWatch=false) {
                         return new Promise( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
+                            var projection = {};
                             if (typeof which === "object" && which.constructor.name === "DBRef") {
                                 /*
                                 if (which.namespace !== this.name+'s') {
@@ -479,8 +502,13 @@ module.exports = function(options) {
                                 criteria['_id'] = which.oid;
                             }
                             else {
-                                if (typeof which === "object")
+                                if (typeof which === "object") {
+                                    if (which.hasOwnProperty("fields")) {
+                                        projection = createProjectionObject(which.fields);
+                                        delete which.fields;
+                                    }
                                     Object.assign (criteria, which);
+                                }
                                 else 
                                     criteria[MainIndex] = which;
                             }
@@ -488,7 +516,7 @@ module.exports = function(options) {
                             // This can happen if the collection does not exist
                             if (!criteria) reject("get: Document "+(which._id?which._id:"")+" not found! (Does collection " + this.collectionName + " exists?)");
 
-                            syncManager.collection.findOne(criteria)
+                            syncManager.collection.findOne(criteria, { projection })
                             .then(
                                 doc=>{
                                     if (doc) {
@@ -514,22 +542,29 @@ module.exports = function(options) {
                         return new Promise( (resolve,reject)=> {
                             if (!syncManager.collection) resolve(null);
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
+                            var projection = {};
                             if (which) {
-                                if (typeof which === "object")
+                                if (typeof which === "object") {
+                                    if (which.hasOwnProperty("fields")) {
+                                        projection = createProjectionObject(which.fields);
+                                        delete which.fields;
+                                    }
                                     Object.assign (criteria, which);
+                                }
                                 else 
                                     criteria[MainIndex] = which;
                             }
 
                             let sort = ( sortBy ? sortBy : {MainIndex:-1} );
-                            var all = [];
 
                             if (!criteria) reject("getAll: invalid criteria! (Does collection " + this.collectionName + " exists?)");
                             syncManager.collection.find(criteria,{
                                 sort:sort,
                                 skip:skip,
                                 limit:limit
-                            }).toArray()
+                            })
+                            .project(projection)
+                            .toArray()
                             .then(alldocs=> {
                                 resolve(alldocs.map(doc=> {
                                     modelGet = doc;
@@ -542,15 +577,20 @@ module.exports = function(options) {
                     static getAllCursor(which,sortBy,limit=0,skip=0,collectionWatch=false) {
                         return new Promise( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
+                            var projection;
                             if (which) {
-                                if (typeof which === "object")
+                                if (typeof which === "object") {
+                                    if (which.hasOwnProperty("fields")) {
+                                        projection = createProjectionObject(which.fields);
+                                        delete which.fields;
+                                    }
                                     Object.assign (criteria, which);
+                                }
                                 else 
                                     criteria[MainIndex] = which;
                             }
 
                             let sort = ( sortBy ? sortBy : {MainIndex:-1} );
-                            var all = [];
 
                             if (!criteria) reject("getAll: invalid criteria! (Does collection " + this.collectionName + " exists?)");
                             let cursor = 
@@ -558,7 +598,8 @@ module.exports = function(options) {
                                 sort:sort,
                                 skip:skip,
                                 limit:limit
-                            });
+                            })
+                            .project(projection);
                             var ThisModel = this;
                             cursor.getNext = function() {
                                 return new Promise ((resolve,reject)=> {
@@ -579,9 +620,15 @@ module.exports = function(options) {
                     static getAllRead(which,sortBy,limit=0,skip=0) {
                         return new Promise( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
+                            var projection = {};
                             if (which) {
-                                if (typeof which === "object")
+                                if (typeof which === "object") {
+                                    if (which.hasOwnProperty("fields")) {
+                                        projection = createProjectionObject(which.fields);
+                                        delete which.fields;
+                                    }
                                     Object.assign (criteria, which);
+                                }
                                 else 
                                     criteria[MainIndex] = which;
                             }
@@ -593,7 +640,9 @@ module.exports = function(options) {
                                 sort:sort,
                                 skip:skip,
                                 limit:limit
-                            }).toArray()
+                            })
+                            .project(projection)
+                            .toArray()
                             .then(allDocs=> {
                                 resolve(allDocs);
                             });
@@ -604,9 +653,15 @@ module.exports = function(options) {
                     static map(which, index, returnArray, limit=0, skip=0, collectionWatch=false) {
                         return new Promise( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
+                            var projection = {};
                             if (which) {
-                                if (typeof which === "object")
+                                if (typeof which === "object") {
+                                    if (which.hasOwnProperty("fields")) {
+                                        projection = createProjectionObject(which.fields);
+                                        delete which.fields;
+                                    }
                                     Object.assign (criteria, which);
+                                }
                                 else 
                                     criteria[MainIndex] = which
                                 
@@ -615,7 +670,10 @@ module.exports = function(options) {
                             if (!index) index = MainIndex;
                             var allmap;
                             allmap = (returnArray ? [] : {});
-                            syncManager.collection.find(criteria, {skip, limit}).toArray()
+                            syncManager.collection
+                            .find(criteria, {skip, limit})
+                            .project(projection)
+                            .toArray()
                             .then(alldocs=> {
                                 alldocs.forEach(doc=> {
                                     modelGet = doc;
@@ -629,18 +687,26 @@ module.exports = function(options) {
                     static mapRead(which, index, returnArray, limit=0, skip=0) {
                         return new Promise( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
+                            var projection = {};
                             if (which) {
-                                if (typeof which === "object")
+                                if (typeof which === "object") {
+                                    if (which.hasOwnProperty("fields")) {
+                                        projection = createProjectionObject(which.fields);
+                                        delete which.fields;
+                                    }
                                     Object.assign (criteria, which);
+                                }
                                 else 
                                     criteria[MainIndex] = which
-                                
                             }
                             
                             if (!index) index = MainIndex;
                             var allmap;
                             allmap = (returnArray ? [] : {});
-                            syncManager.collection.find(criteria, {skip, limit}).toArray()
+                            syncManager.collection.
+                            find(criteria, {skip, limit})
+                            .project(projection)
+                            .toArray()
                             .then(alldocs=> {
                                 alldocs.forEach(doc=> {
                                     allmap[doc[index]] = doc;
@@ -654,16 +720,22 @@ module.exports = function(options) {
                         var thisclass = this;
                         return new Promise( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
+                            var projection = null;
                             if (typeof which === "object" && which.constructor.name === "DBRef") {
                                 criteria['_id'] = which.oid;
                             }
                             else {
-                                if (typeof which === "object")
+                                if (typeof which === "object") {
+                                    if (which.hasOwnProperty("fields")) {
+                                        projection = createProjectionObject(which.fields, true);
+                                        delete which.fields;
+                                    }
                                     Object.assign (criteria, which);
+                                }
                                 else 
                                     criteria[MainIndex] = which;
                             }
-                            syncManager.collection.aggregate([
+                            var aggregation = [
                                 { $match: criteria },
                                 {
                                     $lookup:
@@ -675,8 +747,11 @@ module.exports = function(options) {
                                     }
 
                                 },
-                                { $unwind : "$"+joinAs }
-                            ], async function (err, cursor) {
+                                { $unwind: "$"+joinAs }
+                            ];
+                            if (projection) aggregation.push({ $project: projection });
+                            syncManager.collection.aggregate(aggregation,
+                            async function (err, cursor) {
                                 if (err) {
                                     console.log ("join error:",err);
                                     reject (err);
@@ -697,41 +772,51 @@ module.exports = function(options) {
                         });
                     }
 
-                    static joinAll(which, joinOpts, findOpts, returnAsModel=false,collectionWatch=false) {
+                    static joinAll(which, joinOpts, findOpts, returnAsModel=false, collectionWatch=false) {
                         //joinWith,localField,foreignField,joinAs,returnAsModel=false) {
                         var thisclass = this;
                         return new Promise( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
+                            var projection = null;
                             if (typeof which === "object" && which.constructor.name === "DBRef") {
                                 criteria['_id'] = which.oid;
                             }
                             else {
-                                if (typeof which === "object")
+                                if (typeof which === "object") {
+                                    if (which.hasOwnProperty("fields")) {
+                                        projection = createProjectionObject(which.fields, true);
+                                        delete which.fields;
+                                    }
                                     Object.assign (criteria, which);
+                                }
                                 else 
                                     criteria[MainIndex] = which;
                             }
                             let sort = ( findOpts && findOpts.sortBy ? findOpts.sortBy : {MainIndex:-1} );
-                            let aggregate = [
-                            { $match: criteria },
-                            {
-                                $lookup:
+                            let aggregation = [
+                                { $match: criteria },
                                 {
-                                    from: joinOpts.joinWith,
-                                    localField: joinOpts.localField,
-                                    foreignField: joinOpts.foreignField,
-                                    as: joinOpts.joinAs
-                                }
-                            },
-                            { $unwind : "$"+joinOpts.joinAs },
-                            { $sort: sort }];
+                                    $lookup:
+                                    {
+                                        from: joinOpts.joinWith,
+                                        localField: joinOpts.localField,
+                                        foreignField: joinOpts.foreignField,
+                                        as: joinOpts.joinAs
+                                    }
+                                },
+                                { $unwind : "$"+joinOpts.joinAs },
+                                { $sort: sort },
+                                { $project: projection }
+                            ];
 
                             if (findOpts) {
-                                if (findOpts.hasOwnProperty('skip')) aggregate.push({ $skip: findOpts.skip });
-                                if (findOpts.hasOwnProperty('limit')) aggregate.push({ $limit: findOpts.limit });
+                                if (findOpts.hasOwnProperty('skip')) aggregation.push({ $skip: findOpts.skip });
+                                if (findOpts.hasOwnProperty('limit')) aggregation.push({ $limit: findOpts.limit });
                             }
 
-                            syncManager.collection.aggregate(aggregate, 
+                            if (projection) aggregation.push ({ $project: projection });
+
+                            syncManager.collection.aggregate(aggregation, 
                             async function (err, cursor) {
                                 if (err) {
                                     console.log ("join error:",err);

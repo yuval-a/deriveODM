@@ -53,6 +53,7 @@ It wraps your data classes and objects with [Javascript Proxies](https://develop
     + [`MainIndex`](#mainindex)
       - [`mainIndex() method`](#mainindex-method)
     + [`which` Argument](#which-argument)
+        - [Selective Fields (Projection)](#selective-fields-projection)
     + [`map` - Additional Information](#map---additional-information)
     + [A Word of Caution for When Using the `get` Functions](#a-word-of-caution-for-when-using-the-get-functions)
     + [`$DefaultCriteria`](#defaultcriteria)
@@ -712,6 +713,16 @@ if you pass a **primitive** value (string, number or boolean) - then the functio
 if you pass an **object** - then that object will be used as a query object for Mongo's `find`. <br>
 *Note* if your MainIndex is an object itself - you need to use the normal `find` query format (e.g. if your index-object is called `ob`: `{ob: {prop1:value,prop2:value}}`).
 
+#### Selective Fields (Projection)
+If you'd like to return data objects containing only some of the fields from the model, you may pass an
+object in `which` having a `fields` property containing an array with a list of fields to include in the returned
+data object. <br>
+Notes: <br>
+This can be used with any of the data retrieval functions (get function variations, map functions, and join functions). <br>
+If you use this, you have to specify your search criteria using the normal Mongo's `find` syntax. <br>
+Only fields you specify in the array in the `fields` property will be included in the data object instance. <br>
+If you include fields that doesn't exist on a data document - the data object will not have that field. <br>
+`_id` field is always returned. You cannot disable this. <br>
 
 Let's see some examples, we assume the models from the previous examples are already defined.
 
