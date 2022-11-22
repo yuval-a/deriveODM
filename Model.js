@@ -26,64 +26,67 @@ module.exports = function(options) {
                     return {
                         set: function(target, property, value, receiver) {
                             // Always allow setting the _id property
-                            if (property==="_id") return Reflect.set(target,property,value,receiver);
-                            
+                            if (property==="_id") return Reflect.set(target, property, value, receiver);
                             var propDescrp = Reflect.getOwnPropertyDescriptor(target, property);
                             // If property not defined in model
                             if (!propDescrp) {
-                                // Commented out as this triggers on 'sub properties' which don't have a property descriptor
-                                // Invoke the _error method on the object instance
-                                target._error ("Trying to set unknown property: "+property+" (property value is left unchanged).");
-                                return true;
+                                // If it is a "custom" object (used as the value of a property) -- allow any new properties on it
+                                if (target.hasOwnProperty('$_ModelInstance') || typeof target !== "object") {
+                                    // Invoke the _error method on the object instance
+                                    target._error ("Trying to set unknown property: "+property+" (property value is left unchanged).");
+                                    return true;
+                                }
                             }
                             else {
                                 // Readonly
                                 if (propDescrp.writable === false) {
                                     target._error ("Tried to set read-only property: "+property+" (property is left unchanged).");
                                 }
-                                // If not meta property
-                                else if (! (property.indexOf('$')===0)) {
-                                    let callback  = false;
-                                    let localOnly = false;
-                                    if (value != null && typeof value === "object" && "$value" in value) {
-                                            /*
-                                            if (!"$callback" in value) {
-                                                target._error ("Must use $callback when using object assignment with $value. $callback not found!");
-                                                return false;
-                                            }
-                                            */
-                                            // Special assignment with callback
-                                            if (value.hasOwnProperty("$callback")) {
-                                                // Make the callback "asynchronous"
-                                                let $callback = value.$callback;
-                                                callback = ()=> { setTimeout($callback.bind(target), 0) };
-                                            }
-
-                                            // This is a "local only" update (called when an update is triggered from an external source)
-                                            if (value.hasOwnProperty("$localOnly") && value.$localOnly == true) localOnly = true;
-
-                                            value = value.$value;
-                                    }
-
-                                    // If the property is set to a DeriveJS object - save a DBRef instead
-                                    if (value && value.hasOwnProperty('$_ModelInstance')) {
-                                        value = new DBRef(value.$_ModelInstance, value._id);
-                                    }
-
-                                    if (!localOnly) {
-                                        // Add an Mongo Update call to the bulk operations, with optional update callback
-                                        syncManager.update (target, target._id, property, value, target[property], callback);
-                                    }
-                                }
-
-                                if (target.$Listen && target.$Listen.indexOf(property) > -1) {
-                                    target.changed (property, value, target[property]);
-                                }
-
-                                return Reflect.set(target,property,value,receiver);
                             }
+
+                            // If not meta property
+                            if (! (property.indexOf('$')===0)) {
+                                let callback  = false;
+                                let localOnly = false;
+                                if (value != null && typeof value === "object" && "$value" in value) {
+                                    /*
+                                        if (!"$callback" in value) {
+                                        target._error ("Must use $callback when using object assignment with $value. $callback not found!");
+                                        return false;
+                                    }
+                                    */
+                                    // Special assignment with callback
+                                    if (value.hasOwnProperty("$callback")) {
+                                        // Make the callback "asynchronous"
+                                        let $callback = value.$callback;
+                                        callback = ()=> { setTimeout($callback.bind(target), 0) };
+                                    }
+
+                                    // This is a "local only" update (called when an update is triggered from an external source)
+                                    if (value.hasOwnProperty("$localOnly") && value.$localOnly == true) localOnly = true;
+                                        value = value.$value;
+                                }
+
+                                // If the property is set to a DeriveJS object - save a DBRef instead
+                                if (value && value.hasOwnProperty('$_ModelInstance')) {
+                                    value = new DBRef(value.$_ModelInstance, value._id);
+                                }
+
+                                if (!localOnly) {
+                                    // Add an Mongo Update call to the bulk operations, with optional update callback
+                                    syncManager.update (target, target._id, property, value, target[property], callback);
+                                }
+                            }
+
+                            if (target.$Listen && target.$Listen.indexOf(property) > -1) {
+                                target.changed (property, value, target[property]);
+                            }
+
+                            return Reflect.set(target,property,value,receiver);
                         },
+
                         allowedGet: [ 'inspect', 'toBSON', 'toJSON', '_bsontype', 'then', '_created', 'length', '_id' ],
+                        
                         get: function(target, property, receiver) {
                             if (typeof property === "symbol" || this.allowedGet.indexOf(property)>-1 || property.indexOf('$')===0)
                                 return Reflect.get(target, property, receiver);
