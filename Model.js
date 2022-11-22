@@ -30,12 +30,9 @@ module.exports = function(options) {
                             var propDescrp = Reflect.getOwnPropertyDescriptor(target, property);
                             // If property not defined in model
                             if (!propDescrp) {
-                                // If it is a "custom" object (used as the value of a property) -- allow any new properties on it
-                                if (target.hasOwnProperty('$_ModelInstance') || typeof target !== "object") {
                                     // Invoke the _error method on the object instance
                                     target._error ("Main setter - trying to set unknown property: "+property+" (property value is left unchanged).");
                                     return true;
-                                }
                             }
                             else {
                                 // Readonly
@@ -121,7 +118,7 @@ module.exports = function(options) {
                     var syncManager = this.syncManager;
                     return {
                         set(target, prop, value, receiver) {
-                            if (!Array.isArray(target) && (target.hasOwnProperty('$_ModelInstance') && !target.hasOwnProperty(prop))) {
+                            if (!Array.isArray(target) && !target.hasOwnProperty("$_isDynamic") && !target.hasOwnProperty(prop)) {
                                 originalTarget._error ("Trying to set unknown property: "+prop+" (property value is left unchanged).");
                                 return true;
                             }
@@ -129,8 +126,13 @@ module.exports = function(options) {
                                 // If not meta property
                                 if (! (prop.indexOf('$')===0)) {
                                     if (! (Array.isArray(target) && prop === "length" ) ) {
+                                        if (value === Symbol.DynamicObject) {
+                                            const dynamicObject = {};
+                                            Object.defineProperty(dynamicObject, "$_isDynamic", { writable: false, configurable: false, enumerable: false, value: true });
+                                            value = dynamicObject;
+                                        }
+                                        
                                         var setPath = path+'.'+prop;
-
                                         let callback = false;
                                         // Special assignment with callback
                                         if (typeof value === "object" && value.hasOwnProperty("$value")) {
@@ -157,9 +159,13 @@ module.exports = function(options) {
                     }
                 }
 
-                proxify(obj,path,originalTarget) {
+                proxify(obj, path, originalTarget) {
                     for (var p in obj) {
                         if (obj.constructor.name === "ObjectID") continue;
+                        if (p === "$_isDynamic") {
+                            Object.defineProperty(obj, p, { writeable: false, configurable: false, enumerable: false });
+                            continue;
+                        }
                         if (typeof obj[p] === "object" && obj[p] !== null) {
                             obj[p] = this.proxify (obj[p],path+'.'+p, originalTarget);
                         }
@@ -305,6 +311,13 @@ module.exports = function(options) {
                         for (var i=0,len=objkeys.length;i<len;i++) {
                             key = objkeys[i];
                             this[key] = proxyHandle.proxify(this[key],key,this); 
+                        }
+
+                        // Handle "dynamic objects"
+                        const dynamicKeys = Object.keys(this).filter(k => typeof this[k] === "symbol");
+                        for (let i=0, len=dynamicKeys.length;i<len;i++) {
+                            key = dynamicKeys[i];
+                            this[key] = proxyHandle.proxify({ $_isDynamic: true },key,this)
                         }
 
                         var readonly = Object.keys(this).filter(key => key.isUpperCase());
