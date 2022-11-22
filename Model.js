@@ -33,7 +33,7 @@ module.exports = function(options) {
                                 // If it is a "custom" object (used as the value of a property) -- allow any new properties on it
                                 if (target.hasOwnProperty('$_ModelInstance') || typeof target !== "object") {
                                     // Invoke the _error method on the object instance
-                                    target._error ("Trying to set unknown property: "+property+" (property value is left unchanged).");
+                                    target._error ("Main setter - trying to set unknown property: "+property+" (property value is left unchanged).");
                                     return true;
                                 }
                             }
@@ -86,7 +86,7 @@ module.exports = function(options) {
                         },
 
                         allowedGet: [ 'inspect', 'toBSON', 'toJSON', '_bsontype', 'then', '_created', 'length', '_id' ],
-                        
+
                         get: function(target, property, receiver) {
                             if (typeof property === "symbol" || this.allowedGet.indexOf(property)>-1 || property.indexOf('$')===0)
                                 return Reflect.get(target, property, receiver);
@@ -121,7 +121,7 @@ module.exports = function(options) {
                     var syncManager = this.syncManager;
                     return {
                         set(target, prop, value, receiver) {
-                            if (!Array.isArray(target) && !(target.hasOwnProperty(prop))) {
+                            if (!Array.isArray(target) && (target.hasOwnProperty('$_ModelInstance') && !target.hasOwnProperty(prop))) {
                                 originalTarget._error ("Trying to set unknown property: "+prop+" (property value is left unchanged).");
                                 return true;
                             }
