@@ -649,26 +649,26 @@ to them, thereby preventing them from being garbage collected (even if you set t
 thereby this feature is turned off by default, and should be used sparingly (for example, if you intend to keep references to data object instances indefinitely).
 Prior versions (2+) had this feature on for all data object instances by default.
 
-### `get(which)` 
+### `get(which, collectionWatch = false)` 
 Returns **one** object instance.
 
-### `getAll(which, sortBy, limit=0, skip=0)` 
+### `getAll(which, sortBy, limit=0, skip=0, collectionWatch = false)` 
 Returns **all** (with an optional filter query) object instances (in an array). There are 3 more additional optional arguments:
 * `sortBy` - to specify a different index to sort by, using an object such as `{<indexName>: <-1 or 1>}` - use `-1` for descending order, and `1` for ascending (the default is `{MainIndex:-1}`).
 * `limit` - to limit the number of returned results (default is `0`, which is unlimited). 
 * `skip` to specify an offset index for retrieved results (default is `0`).
 
-### `getAllCursor(which, sortBy, limit=0, skip=0)`
+### `getAllCursor(which, sortBy, limit=0, skip=0, collectionWatch = false)`
 This function is identical in functionality to [`getAll`](#getallwhich-sortby-limit0-skip0), only it returns a **[Cursor](https://mongodb.github.io/node-mongodb-native/3.6/api/Cursor.html)**. The cursor has identical functionality to the Node's MongoDB driver cursor, with one additional function:
 `getNext` - which is identical to the cursor's native [`next`](https://mongodb.github.io/node-mongodb-native/3.6/api/Cursor.html#next) function, only it 
 returns a Promise that resolves with the next document as a **Derive data object** (or null if there are no more documents to retrieve ).
 
-### `getAllRead(which, sortBy, limit=0, skip=0)`
+### `getAllRead(which, sortBy, limit=0, skip=0, collectionWatch = false)`
 This function is idential to [`getAll`](#getallwhich-sortby-limit0-skip0), only it returns "raw" Mongo documents, and **not** Derive data objects. 
 As with `getAll` there are some performance degradation when retrieving a large amount of documents, as a new instance is created for each, 
 if you only need to retrieve data for read only purposes, you may use `getAllRead` instead. Remember that the returned documents will **not** be reactive.
 
-### `map(which, index, returnArray, limit=0, skip=0)` 
+### `map(which, index, returnArray, limit=0, skip=0, collectionWatch = false)` 
 `map` returns **all** (with an optional filter query) object instances mapped by an index as an object, or as an array (according to the third boolean argument `returnArray`). The second argument `index` lets you set the index name that will be used for the mapping (set as null to use the default `MainIndex`). 
 The 4th and 5th arguments are `limit` and `skip` that allows you to get only some of the documents.
 
@@ -677,7 +677,7 @@ This function is idential to [`map`](#mapwhich-index-returnarray-limit0-skip0), 
 As with `map` there are some performance degradation when retrieving a large amount of documents, as a new instance is created for each, 
 if you only need to retrieve data for read only purposes, you may use `mapRead` instead. Remember that the returned documents will **not** be reactive.
 
-### `has(which, returnDocument)` 
+### `has(which, returnDocument, collectionWatch = false)` 
 Returns a boolean indicating if a database collection contains certain value(s). The second `returnDocument` is a boolean - if the document exist and this argument is set to `true` -
 the document will also be returned (as a Derive data object), otherwise `false` will be returned (regardless of the value of `returnDocument`).
 
@@ -1155,7 +1155,7 @@ with the shields down - The Boldly Go "integrity hull" suffers a damage of 20 pe
 ## Advanced Subjects
 ### Join
 You can perform a "join" query with the `join` static method all model classes have:
-`join(which,joinWith,localField,foreignField,joinAs,returnAsModel=false)`
+`join(which, joinWith, localField, foreignField, joinAs, returnAsModel=false, collectionWatch = false)`
 
 * `which` is the criteria for the document to retrieve from the "primary" ("local" collection),
 * `joinWith` is the name of the "secondary" ("foreign") collection (as a string).
@@ -1195,6 +1195,7 @@ The function accepts the following arguments:
     * `limit`: lets you limit the number of results returned.    
 * `returnAsModel` if set to true, then the function will return an instance of the model (as in when using the `get` function) - see notes about this in the documentation for `join`, and why you should almost never need to set this to
 `true`.
+* `collectionWatch` - if set to true, will turn on ChangeStream support for returned data objects.
 
 ### Access the "raw" mongoDB collection object
 Although DeriveJS is designed, written, and intended to be in charge of all data persistence operations transparently in the background without direct interference,
