@@ -736,7 +736,7 @@ module.exports = function(options) {
                         var thisclass = this;
                         return new Promise( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
-                            var projection = null;
+                            var projection = undefined;
                             if (typeof which === "object" && which.constructor.name === "DBRef") {
                                 criteria['_id'] = which.oid;
                             }
@@ -793,7 +793,7 @@ module.exports = function(options) {
                         var thisclass = this;
                         return new Promise( (resolve,reject)=> {
                             var criteria = Object.assign({},ModelClass.$DefaultCriteria);
-                            var projection = null;
+                            var projection = undefined;
                             if (typeof which === "object" && which.constructor.name === "DBRef") {
                                 criteria['_id'] = which.oid;
                             }
@@ -822,8 +822,9 @@ module.exports = function(options) {
                                 },
                                 { $unwind : "$"+joinOpts.joinAs },
                                 { $sort: sort },
-                                { $project: projection }
                             ];
+                            
+                            if (projection) aggregation.push({ $project: projection });
 
                             if (findOpts) {
                                 if (findOpts.hasOwnProperty('skip')) aggregation.push({ $skip: findOpts.skip });
